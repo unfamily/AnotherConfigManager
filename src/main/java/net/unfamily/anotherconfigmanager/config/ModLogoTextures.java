@@ -73,8 +73,8 @@ public final class ModLogoTextures {
             int w = image.getWidth();
             int h = image.getHeight();
             String safeId = modId.replace(':', '_').replaceAll("[^a-z0-9_./-]", "_");
-            Identifier location = Identifier.fromNamespaceAndPath("iska_lib", "modlogo/" + safeId);
-            tm.register(location, new DynamicTexture(() -> "iska_lib mod logo " + modId, image));
+            Identifier location = Identifier.fromNamespaceAndPath("another_config_manager", "modlogo/" + safeId);
+            tm.register(location, new DynamicTexture(() -> "another_config_manager mod logo " + modId, image));
             return Optional.of(new Logo(location, w, h));
         } catch (Exception error) {
             return Optional.empty();

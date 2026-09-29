@@ -11,7 +11,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.common.ModConfigSpec;
-import net.unfamily.iskalib.client.gui.color.HsvColorPickerPanel;
+import net.unfamily.anotherconfigmanager.client.gui.color.HsvColorPickerPanel;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -99,7 +99,7 @@ public class ColorEditScreen extends Screen {
             return decoded;
         }
         if (raw instanceof String s) {
-            Integer rgb = net.unfamily.iskalib.client.gui.color.ColorMath.parseHexRgb(s);
+            Integer rgb = net.unfamily.anotherconfigmanager.client.gui.color.ColorMath.parseHexRgb(s);
             if (rgb != null) {
                 return 0xFF000000 | rgb;
             }

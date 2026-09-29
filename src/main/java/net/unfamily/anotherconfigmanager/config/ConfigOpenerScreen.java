@@ -55,8 +55,8 @@ public class ConfigOpenerScreen extends Screen {
         footer.addChild(Button.builder(
                 Component.translatable("screen.another_config_manager.config.mods_browser"),
                 button -> minecraft.setScreen(new ConfigModBrowserScreen(this))
-        ).width(100).build());
-        footer.addChild(Button.builder(CommonComponents.GUI_DONE, button -> onClose()).width(100).build());
+        ).width(120).build());
+        footer.addChild(Button.builder(CommonComponents.GUI_DONE, button -> onClose()).width(120).build());
         layout.visitWidgets(this::addRenderableWidget);
         repositionElements();
     }
