@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "net.unfamily.anotherconfigmanager.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "another_config_manager.refmap.json",
+  "mixins": [],
+  "client": [
+    "ModListScreenMixin"
+  ],
+  "minVersion": "0.8"
+}

@@ -116,6 +116,20 @@ configurations {
 }
 
 dependencies {
+
+    annotationProcessor 'org.spongepowered:mixin:0.8.7:processor'
+
+    def iskaLibLocalJar = file('../Iskandert-Library-1.21.1/build/libs/iska_lib-1.12.0.0.0.jar')
+    if (!iskaLibLocalJar.exists()) {
+        iskaLibLocalJar = file('libs/iska_lib-1.12.0.0.0.jar')
+    }
+    if (!iskaLibLocalJar.exists()) {
+        iskaLibLocalJar = file('../iskandert_utilities/libs/iska_lib-1.12.0.0.0-neoforge-1.21.1.jar')
+    }
+    if (iskaLibLocalJar.exists()) {
+        implementation files(iskaLibLocalJar)
+        localRuntime files(iskaLibLocalJar)
+    }
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
@@ -151,6 +165,8 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_name               : mod_name,
             mod_license            : mod_license,
             mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description,
     ]
     inputs.properties replaceProperties
     expand replaceProperties
