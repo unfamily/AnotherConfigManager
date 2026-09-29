@@ -26,6 +26,10 @@ public class ModListScreenMixin {
         if (!AcmConfig.REPLACE_MODS_BUTTON.get()) {
             return;
         }
+        // Opened from ACM mod browser: keep the native NeoForge list.
+        if (parentScreen instanceof ConfigModBrowserScreen) {
+            return;
+        }
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft == null) {
             return;

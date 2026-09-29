@@ -1,6 +1,6 @@
 package net.unfamily.anotherconfigmanager.config;
 
-import net.unfamily.iskalib.client.gui.color.ColorMath;
+import net.unfamily.anotherconfigmanager.client.gui.color.ColorMath;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;

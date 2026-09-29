@@ -471,7 +471,7 @@ public class CsvTableScreen extends Screen {
         Integer packed = ColorCodec.decodeSingleValue(current, colorSpec);
         int argb = packed != null ? packed : 0xFFFFFFFF;
         if (packed == null) {
-            Integer rgb = net.unfamily.iskalib.client.gui.color.ColorMath.parseHexRgb(current);
+            Integer rgb = net.unfamily.anotherconfigmanager.client.gui.color.ColorMath.parseHexRgb(current);
             if (rgb != null) {
                 argb = 0xFF000000 | rgb;
             }

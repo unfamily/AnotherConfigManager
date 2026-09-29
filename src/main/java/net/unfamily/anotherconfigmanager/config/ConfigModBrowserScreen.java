@@ -12,6 +12,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.client.gui.ModListScreen;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -71,7 +72,12 @@ public class ConfigModBrowserScreen extends Screen {
         status = new StringWidget(Component.empty(), font);
         addRenderableWidget(status);
 
-        layout.addToFooter(Button.builder(CommonComponents.GUI_DONE, button -> onClose()).width(200).build());
+        LinearLayout footer = layout.addToFooter(LinearLayout.horizontal().spacing(8));
+        footer.addChild(Button.builder(
+                Component.translatable("screen.another_config_manager.config.neoforge_mod_list"),
+                button -> minecraft.setScreen(new ModListScreen(this))
+        ).width(120).build());
+        footer.addChild(Button.builder(CommonComponents.GUI_DONE, button -> onClose()).width(120).build());
 
         layout.visitWidgets(this::addRenderableWidget);
         repositionElements();
