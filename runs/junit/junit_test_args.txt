@@ -1,0 +1,6 @@
+--version
+26.1.2.73
+--assetIndex
+asset-index
+--assetsDir
+/home/unfamily/.gradle/caches/minecraft/assets
