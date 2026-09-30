@@ -2,16 +2,15 @@ package net.unfamily.anotherconfigmanager.config;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.StringWidget;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.unfamily.anotherconfigmanager.client.gui.AcmButton;
+import net.unfamily.anotherconfigmanager.client.gui.AcmUi;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -31,6 +30,10 @@ public class ListEditScreen extends Screen {
     private static final int LIST_GAP = 12;
     private static final int BUTTON_H = 20;
     private static final int CONTENT_MARGIN = 20;
+    private static final int INDEX_W = 44;
+    private static final int ROW_ITEM_H = 36;
+    private static final int ROW_MAIN_H = 20;
+    private static final int HDR_ICON = 12;
 
     private final ConfigOpenerScreen.SpecScreen parent;
     private final ConfigEditSession session;
@@ -46,9 +49,9 @@ public class ListEditScreen extends Screen {
     private @Nullable EditBox separatorBox;
     private @Nullable EditBox valueBox;
     private @Nullable StringWidget status;
+    private @Nullable StringWidget paramSubtitle;
     private @Nullable StringWidget sepLabel;
-    private @Nullable Button enableCsvButton;
-    private @Nullable Button csvViewButton;
+    private @Nullable AcmButton enableCsvButton;
     private @Nullable LinearLayout buttonRow;
     private @Nullable LinearLayout editRow;
     private String searchQuery = "";
@@ -65,7 +68,7 @@ public class ListEditScreen extends Screen {
             ConfigSpecNodes.ValueNode node,
             boolean preferRawList
     ) {
-        super(Component.literal(node.displayName()));
+        super(parent.stickyHeaderTitle());
         this.parent = parent;
         this.session = session;
         this.node = node;
@@ -94,7 +97,10 @@ public class ListEditScreen extends Screen {
 
         LinearLayout header = layout.addToHeader(LinearLayout.vertical().spacing(0));
         header.defaultCellSetting().alignHorizontallyCenter();
-        header.addChild(new StringWidget(title, font));
+        header.addChild(new StringWidget(parent.stickyHeaderTitle(), font));
+
+        paramSubtitle = new StringWidget(Component.literal(node.displayName()), font);
+        addRenderableWidget(paramSubtitle);
 
         searchBox = new EditBox(font, 0, 0, 200, 20, Component.translatable("screen.another_config_manager.config.search"));
         searchBox.setHint(Component.translatable("screen.another_config_manager.config.search"));
@@ -112,17 +118,10 @@ public class ListEditScreen extends Screen {
             separatorBox.setMaxLength(CsvBindingLine.MAX_SEPARATOR_LENGTH);
             separatorBox.setValue(CsvBindingLine.DEFAULT_SEPARATOR);
             addRenderableWidget(separatorBox);
-            enableCsvButton = Button.builder(Component.translatable("screen.another_config_manager.config.csv.enable"), button -> confirmSeparator())
-                    .width(110)
-                    .build();
+            enableCsvButton = AcmButton.text(110,
+                    Component.translatable("screen.another_config_manager.config.csv.enable"),
+                    this::confirmSeparator);
             addRenderableWidget(enableCsvButton);
-        }
-        if (showCsvView) {
-            csvViewButton = Button.builder(Component.translatable("screen.another_config_manager.config.csv.csv_view"), button -> openCsvView())
-                    .width(100)
-                    .tooltip(Tooltip.create(Component.translatable("screen.another_config_manager.config.csv.csv_view.tooltip")))
-                    .build();
-            addRenderableWidget(csvViewButton);
         }
 
         rowList = new RowList(minecraft);
@@ -132,22 +131,27 @@ public class ListEditScreen extends Screen {
         editRow = LinearLayout.horizontal().spacing(6);
         valueBox = editRow.addChild(new EditBox(font, 0, 0, 220, 20, Component.translatable("screen.another_config_manager.config.list.value")));
         valueBox.setMaxLength(1024);
-        editRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.list.add"), button -> addRow())
-                .width(70)
-                .build());
-        editRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.list.remove"), button -> removeSelected())
-                .width(80)
-                .build());
+        editRow.addChild(AcmButton.text(56,
+                Component.translatable("screen.another_config_manager.config.list.set"),
+                this::setSelectedFromBox,
+                Component.translatable("screen.another_config_manager.config.list.set.tooltip")));
+        if (showCsvView) {
+            editRow.addChild(AcmButton.text(100,
+                    Component.translatable("screen.another_config_manager.config.csv.csv_view"),
+                    this::openCsvView,
+                    Component.translatable("screen.another_config_manager.config.csv.csv_view.tooltip")));
+        }
         editRow.visitWidgets(this::addRenderableWidget);
 
         status = new StringWidget(Component.empty(), font);
         addRenderableWidget(status);
 
         buttonRow = LinearLayout.horizontal().spacing(8);
-        buttonRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.apply"), button -> apply())
-                .width(100)
-                .build());
-        buttonRow.addChild(Button.builder(CommonComponents.GUI_BACK, button -> onClose()).width(100).build());
+        buttonRow.addChild(AcmButton.text(100,
+                Component.translatable("screen.another_config_manager.config.apply"),
+                this::apply));
+        buttonRow.addChild(AcmButton.text(100,
+                Component.translatable("screen.another_config_manager.config.back"), this::onClose));
         buttonRow.visitWidgets(this::addRenderableWidget);
 
         layout.visitWidgets(this::addRenderableWidget);
@@ -207,13 +211,16 @@ public class ListEditScreen extends Screen {
         return out;
     }
 
-    private void addRow() {
-        if (valueBox == null) {
+    private void setSelectedFromBox() {
+        if (rowList == null || valueBox == null) {
+            return;
+        }
+        RowList.Entry selected = rowList.getSelected();
+        if (selected == null) {
             return;
         }
         try {
-            rows.add(parseElement(valueBox.getValue()));
-            valueBox.setValue("");
+            rows.set(selected.sourceIndex, parseElement(valueBox.getValue()));
             rebuildRows();
             setStatusMessage(Component.empty());
         } catch (RuntimeException error) {
@@ -221,18 +228,27 @@ public class ListEditScreen extends Screen {
         }
     }
 
-    private void removeSelected() {
-        if (rowList == null) {
+    private void removeRowAt(int rowIndex) {
+        if (rowIndex < 0 || rowIndex >= rows.size()) {
             return;
         }
-        RowList.Entry selected = rowList.getSelected();
-        if (selected == null) {
-            return;
+        rows.remove(rowIndex);
+        rebuildRows();
+    }
+
+    private void insertEmptyRowAfter(int rowIndex) {
+        Object empty;
+        try {
+            empty = stringList ? "" : parseElement("0");
+        } catch (RuntimeException error) {
+            empty = "";
         }
-        if (selected.sourceIndex >= 0 && selected.sourceIndex < rows.size()) {
-            rows.remove(selected.sourceIndex);
-            rebuildRows();
+        if (rows.isEmpty()) {
+            rows.add(empty);
+        } else {
+            rows.add(Math.min(rowIndex + 1, rows.size()), empty);
         }
+        rebuildRows();
     }
 
     private Object parseElement(String text) {
@@ -291,6 +307,13 @@ public class ListEditScreen extends Screen {
         int innerX = CONTENT_MARGIN;
 
         int y = contentTop;
+        if (paramSubtitle != null) {
+            int pw = font.width(paramSubtitle.getMessage());
+            paramSubtitle.setWidth(Math.min(pw, innerW));
+            paramSubtitle.setHeight(9);
+            paramSubtitle.setPosition(innerX + (innerW - paramSubtitle.getWidth()) / 2, y);
+            y += 12 + TOP_STACK_GAP;
+        }
         if (searchBox != null) {
             int searchW = Math.min(360, innerW);
             searchBox.setWidth(searchW);
@@ -298,7 +321,7 @@ public class ListEditScreen extends Screen {
             y += BUTTON_H + TOP_STACK_GAP;
         }
 
-        if (showEnableCsv && separatorBox != null && enableCsvButton != null && sepLabel != null) {
+        if (showEnableCsv && separatorBox != null && sepLabel != null && enableCsvButton != null) {
             int labelW = font.width(sepLabel.getMessage());
             int sepW = 48;
             sepLabel.setWidth(labelW);
@@ -309,10 +332,6 @@ public class ListEditScreen extends Screen {
             separatorBox.setWidth(sepW);
             separatorBox.setPosition(rowX + labelW + 6, y);
             enableCsvButton.setPosition(rowX + labelW + 6 + sepW + 6, y);
-            y += BUTTON_H + TOP_STACK_GAP;
-        }
-        if (showCsvView && csvViewButton != null) {
-            csvViewButton.setPosition(innerX + (innerW - csvViewButton.getWidth()) / 2, y);
             y += BUTTON_H + TOP_STACK_GAP;
         }
 
@@ -353,7 +372,7 @@ public class ListEditScreen extends Screen {
 
     private final class RowList extends ObjectSelectionList<RowList.Entry> {
         RowList(Minecraft minecraft) {
-            super(minecraft, ListEditScreen.this.width, ListEditScreen.this.height, 0, 22);
+            super(minecraft, ListEditScreen.this.width, ListEditScreen.this.height, 0, ROW_ITEM_H);
         }
 
         void replaceRows(List<IndexedRow> values) {
@@ -371,6 +390,9 @@ public class ListEditScreen extends Screen {
         final class Entry extends ObjectSelectionList.Entry<Entry> {
             private final int sourceIndex;
             private final Object value;
+            private int layoutTop;
+            private int layoutLeft;
+            private int layoutHeight;
 
             Entry(int sourceIndex, Object value) {
                 this.sourceIndex = sourceIndex;
@@ -379,18 +401,74 @@ public class ListEditScreen extends Screen {
 
             @Override
             public Component getNarration() {
-                return Component.literal(String.valueOf(value));
+                return Component.literal("#" + sourceIndex);
             }
 
             @Override
             public void render(GuiGraphics graphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-                String text = sourceIndex + ": " + value;
-                graphics.drawString(font, text, left + 2, top + (height - 8) / 2, 0xFFFFFFFF);
+                layoutTop = top;
+                layoutLeft = left + 2;
+                layoutHeight = height;
+                int mainY = top + (ROW_MAIN_H - 8) / 2;
+                int rowTop = top + 1;
+                int rowBottom = top + ROW_MAIN_H - 1;
+                int x = layoutLeft;
+                String indexLabel = "#" + sourceIndex;
+                graphics.drawString(font, indexLabel, x + 2, mainY, 0xFFAAAAAA);
+                int minusX = x + INDEX_W - HDR_ICON - 2;
+                boolean minusHover = mouseX >= minusX && mouseX < minusX + HDR_ICON
+                        && mouseY >= rowTop && mouseY < rowBottom;
+                if (minusHover) {
+                    graphics.fill(minusX, rowTop, minusX + HDR_ICON, rowBottom, 0x55FF8080);
+                }
+                graphics.drawString(font, "−", minusX + (HDR_ICON - font.width("−")) / 2, mainY, 0xFFE8E8F0);
+
+                int addY = top + ROW_MAIN_H + 2;
+                int addH = layoutHeight - ROW_MAIN_H - 2;
+                int plusX = x + (INDEX_W - HDR_ICON) / 2;
+                if (addH > 6) {
+                    boolean plusHover = mouseX >= plusX && mouseX < plusX + HDR_ICON
+                            && mouseY >= addY && mouseY < addY + addH;
+                    if (plusHover) {
+                        graphics.fill(plusX, addY, plusX + HDR_ICON, addY + addH, 0x5544FF44);
+                    }
+                    graphics.drawString(font, "+", plusX + (HDR_ICON - font.width("+")) / 2, addY + 1, 0xFF88FF88);
+                }
+
+                String text = String.valueOf(value);
+                if (font.width(text) > getRowWidth() - INDEX_W - 8) {
+                    text = font.plainSubstrByWidth(text, Math.max(8, getRowWidth() - INDEX_W - font.width("…"))) + "…";
+                }
+                graphics.drawString(font, text, x + INDEX_W + 4, mainY, 0xFFFFFFFF);
             }
 
             @Override
             public boolean mouseClicked(double mouseX, double mouseY, int button) {
-                rowList.setSelected(this);
+                if (button != 0) {
+                    return false;
+                }
+                int top = layoutTop;
+                int rowHeight = layoutHeight > 0 ? layoutHeight : ROW_ITEM_H;
+                int x = layoutLeft;
+                int rowTop = top + 1;
+                int rowBottom = top + ROW_MAIN_H - 1;
+                int minusX = x + INDEX_W - HDR_ICON - 2;
+                double mx = mouseX;
+                double my = mouseY;
+                if (mx >= minusX && mx < minusX + HDR_ICON && my >= rowTop && my < rowBottom) {
+                    AcmUi.playClick();
+                    removeRowAt(sourceIndex);
+                    return true;
+                }
+                int addY = top + ROW_MAIN_H + 2;
+                int addH = rowHeight - ROW_MAIN_H - 2;
+                int plusX = x + (INDEX_W - HDR_ICON) / 2;
+                if (addH > 6 && mx >= plusX && mx < plusX + HDR_ICON && my >= addY && my < addY + addH) {
+                    AcmUi.playClick();
+                    insertEmptyRowAfter(sourceIndex);
+                    return true;
+                }
+                RowList.this.setSelected(this);
                 if (valueBox != null) {
                     valueBox.setValue(String.valueOf(value));
                 }

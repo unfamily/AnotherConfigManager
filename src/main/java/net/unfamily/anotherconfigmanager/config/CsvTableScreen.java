@@ -3,17 +3,16 @@ package net.unfamily.anotherconfigmanager.config;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.unfamily.anotherconfigmanager.client.gui.AcmButton;
+import net.unfamily.anotherconfigmanager.client.gui.AcmUi;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.StringWidget;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.locale.Language;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,12 +31,16 @@ public class CsvTableScreen extends Screen {
     private static final int LIST_GAP = 12;
     private static final int BUTTON_H = 20;
     private static final int CONTENT_MARGIN = 20;
-    private static final int COL_HEADER_H = 14;
+    private static final int COL_HEADER_H = 20;
     private static final int H_SCROLLBAR_H = 6;
     private static final int COL_PAD = 8;
     private static final int COL_MIN = 48;
     private static final int COL_MAX = 140;
-    private static final int INDEX_W = 28;
+    private static final int INDEX_W = 44;
+    private static final int ROW_ITEM_H = 36;
+    private static final int ROW_MAIN_H = 20;
+    private static final int HDR_ICON = 12;
+    private static final int HDR_ICON_STEP = HDR_ICON + 1;
 
     private final ConfigOpenerScreen.SpecScreen parent;
     private final ConfigEditSession session;
@@ -56,7 +59,7 @@ public class CsvTableScreen extends Screen {
     private @Nullable StringWidget status;
     private @Nullable LinearLayout buttonRow;
     private @Nullable LinearLayout editRow;
-    private @Nullable LinearLayout structureRow;
+    private @Nullable StringWidget paramSubtitle;
     private String searchQuery = "";
     private int selectedRow = -1;
     private int selectedCol = -1;
@@ -67,7 +70,7 @@ public class CsvTableScreen extends Screen {
             ConfigSpecNodes.ValueNode node,
             CsvRule rule
     ) {
-        super(Component.literal(node.displayName()));
+        super(parent.stickyHeaderTitle());
         this.parent = parent;
         this.session = session;
         this.node = node;
@@ -96,7 +99,10 @@ public class CsvTableScreen extends Screen {
 
         LinearLayout header = layout.addToHeader(LinearLayout.vertical().spacing(0));
         header.defaultCellSetting().alignHorizontallyCenter();
-        header.addChild(new StringWidget(title, font));
+        header.addChild(new StringWidget(parent.stickyHeaderTitle(), font));
+
+        paramSubtitle = new StringWidget(Component.literal(node.displayName()), font);
+        addRenderableWidget(paramSubtitle);
 
         searchBox = new EditBox(font, 0, 0, 200, 20, Component.translatable("screen.another_config_manager.config.search"));
         searchBox.setHint(Component.translatable("screen.another_config_manager.config.search"));
@@ -118,52 +124,31 @@ public class CsvTableScreen extends Screen {
         editRow = LinearLayout.horizontal().spacing(4);
         cellBox = editRow.addChild(new EditBox(font, 0, 0, 160, 20, Component.translatable("screen.another_config_manager.config.csv.cell")));
         cellBox.setMaxLength(2048);
-        editRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.csv.set_cell"), button -> setCell())
-                .width(72)
-                .tooltip(Tooltip.create(Component.translatable("screen.another_config_manager.config.csv.set_cell.tooltip")))
-                .build());
-        editRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.list.add"), button -> addRow())
-                .width(48)
-                .tooltip(Tooltip.create(Component.translatable("screen.another_config_manager.config.list.add.tooltip")))
-                .build());
-        editRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.list.remove"), button -> removeRow())
-                .width(64)
-                .tooltip(Tooltip.create(Component.translatable("screen.another_config_manager.config.list.remove.tooltip")))
-                .build());
-        editRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.csv.pick_color_short"), button -> pickColorForCell())
-                .width(56)
-                .tooltip(Tooltip.create(Component.translatable("screen.another_config_manager.config.csv.pick_color.tooltip")))
-                .build());
+        editRow.addChild(AcmButton.text(72,
+                Component.translatable("screen.another_config_manager.config.csv.set_cell"),
+                this::setCell,
+                Component.translatable("screen.another_config_manager.config.csv.set_cell.tooltip")));
+        editRow.addChild(AcmButton.text(80,
+                Component.translatable("screen.another_config_manager.config.csv.list_view"),
+                this::openRawListView,
+                Component.translatable("screen.another_config_manager.config.csv.list_view.tooltip")));
+        editRow.addChild(AcmButton.text(56,
+                Component.translatable("screen.another_config_manager.config.csv.pick_color_short"),
+                this::pickColorForCell,
+                Component.translatable("screen.another_config_manager.config.csv.pick_color.tooltip"))
+                .activeWhen(this::isSelectedColorCell));
         editRow.visitWidgets(this::addRenderableWidget);
-
-        structureRow = LinearLayout.horizontal().spacing(4);
-        structureRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.csv.insert_column"), button -> insertColumnAtSelection())
-                .width(100)
-                .tooltip(Tooltip.create(Component.translatable("screen.another_config_manager.config.csv.insert_column.tooltip")))
-                .build());
-        structureRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.csv.move_column"), button -> moveColumnRight())
-                .width(100)
-                .tooltip(Tooltip.create(Component.translatable("screen.another_config_manager.config.csv.move_column.tooltip")))
-                .build());
-        structureRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.csv.delete_column"), button -> deleteColumnAtSelection())
-                .width(108)
-                .tooltip(Tooltip.create(Component.translatable("screen.another_config_manager.config.csv.delete_column.tooltip")))
-                .build());
-        structureRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.csv.list_view"), button -> openRawListView())
-                .width(80)
-                .tooltip(Tooltip.create(Component.translatable("screen.another_config_manager.config.csv.list_view.tooltip")))
-                .build());
-        structureRow.visitWidgets(this::addRenderableWidget);
 
         status = new StringWidget(Component.empty(), font);
         addRenderableWidget(status);
 
         buttonRow = LinearLayout.horizontal().spacing(8);
-        buttonRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.apply"), button -> apply())
-                .width(100)
-                .tooltip(Tooltip.create(Component.translatable("screen.another_config_manager.config.apply.tooltip")))
-                .build());
-        buttonRow.addChild(Button.builder(CommonComponents.GUI_BACK, button -> onClose()).width(100).build());
+        buttonRow.addChild(AcmButton.text(100,
+                Component.translatable("screen.another_config_manager.config.apply"),
+                this::apply,
+                Component.translatable("screen.another_config_manager.config.apply.tooltip")));
+        buttonRow.addChild(AcmButton.text(100,
+                Component.translatable("screen.another_config_manager.config.back"), this::onClose));
         buttonRow.visitWidgets(this::addRenderableWidget);
 
         layout.visitWidgets(this::addRenderableWidget);
@@ -451,9 +436,7 @@ public class CsvTableScreen extends Screen {
 
     private void pickColorForCell() {
         if (selectedRow < 0 || selectedCol < 0 || selectedRow >= table.size()) {
-            if (status != null) {
-                setStatusMessage(Component.translatable("screen.another_config_manager.config.color.need_cell"));
-            }
+            setStatusMessage(Component.translatable("screen.another_config_manager.config.color.need_cell"));
             return;
         }
         CsvRule.ColumnSpec spec = findSpec(rule, selectedCol);
@@ -505,21 +488,12 @@ public class CsvTableScreen extends Screen {
         return spec != null && spec.isColorCell();
     }
 
-    private void moveColumnRight() {
-        if (!canMutateColumns() || selectedCol < 0) {
-            return;
-        }
-        int from = selectedCol;
-        int to = from + 1;
-        int maxCols = 0;
-        for (List<String> row : table) {
-            maxCols = Math.max(maxCols, row.size());
-        }
-        if (to >= maxCols) {
+    private void swapColumns(int from, int to) {
+        if (from == to || from < 0 || to < 0) {
             return;
         }
         for (List<String> row : table) {
-            while (row.size() <= to) {
+            while (row.size() <= Math.max(from, to)) {
                 row.add("");
             }
             String tmp = row.get(from);
@@ -531,48 +505,54 @@ public class CsvTableScreen extends Screen {
         rebuildList();
     }
 
-    private void deleteColumnAtSelection() {
-        if (!canMutateColumns() || selectedCol < 0) {
+    private void moveColumnRight(int colIndex) {
+        if (!canMutateColumns() || colIndex < 0) {
             return;
         }
-        int at = selectedCol;
+        int to = colIndex + 1;
+        int maxCols = 0;
+        for (List<String> row : table) {
+            maxCols = Math.max(maxCols, row.size());
+        }
+        if (to >= maxCols) {
+            return;
+        }
+        swapColumns(colIndex, to);
+    }
+
+    private void moveColumnLeft(int colIndex) {
+        if (!canMutateColumns() || colIndex <= 0) {
+            return;
+        }
+        swapColumns(colIndex, colIndex - 1);
+    }
+
+    private void deleteColumnAt(int at) {
+        if (!canMutateColumns() || at < 0) {
+            return;
+        }
         for (List<String> row : table) {
             if (at < row.size()) {
                 row.remove(at);
             }
         }
-        selectedCol = Math.min(at, Math.max(0, headers.size() - 2));
+        if (selectedCol == at) {
+            selectedCol = Math.min(at, Math.max(0, headers.size() - 2));
+        } else if (selectedCol > at) {
+            selectedCol--;
+        }
         refreshHeaders(true);
         rebuildList();
     }
 
-    private void addRow() {
-        List<String> row = new ArrayList<>();
-        for (int i = 0; i < Math.max(1, headers.size()); i++) {
-            row.add("");
-        }
-        table.add(row);
-        selectedRow = table.size() - 1;
-        selectedCol = headers.isEmpty() ? 0 : headers.get(0).index();
-        rebuildList();
-    }
-
-    private void removeRow() {
-        if (selectedRow < 0 || selectedRow >= table.size()) {
-            return;
-        }
-        table.remove(selectedRow);
-        selectedRow = -1;
-        selectedCol = -1;
-        rebuildList();
-    }
-
-    private void insertColumnAtSelection() {
+    private void insertColumnAt(int at) {
         if (!canMutateColumns()) {
             setStatusMessage(Component.translatable("screen.another_config_manager.config.invalid"));
             return;
         }
-        int at = selectedCol >= 0 ? selectedCol : headers.size();
+        if (at < 0) {
+            at = headers.isEmpty() ? 0 : headers.getLast().index() + 1;
+        }
         for (List<String> row : table) {
             while (row.size() < at) {
                 row.add("");
@@ -591,18 +571,40 @@ public class CsvTableScreen extends Screen {
         rebuildList();
     }
 
-    private void moveCellSameRow(int fromCol, int toCol) {
-        if (selectedRow < 0 || selectedRow >= table.size() || fromCol == toCol || fromCol < 0 || toCol < 0) {
+    private void insertColumnAfter(int colIndex) {
+        insertColumnAt(colIndex + 1);
+    }
+
+    private void removeRowAt(int rowIndex) {
+        if (rowIndex < 0 || rowIndex >= table.size()) {
             return;
         }
-        List<String> row = table.get(selectedRow);
-        while (row.size() <= Math.max(fromCol, toCol)) {
+        table.remove(rowIndex);
+        if (selectedRow == rowIndex) {
+            selectedRow = -1;
+            selectedCol = -1;
+        } else if (selectedRow > rowIndex) {
+            selectedRow--;
+        }
+        rebuildList();
+    }
+
+    private void insertEmptyRowAfter(int rowIndex) {
+        List<String> row = new ArrayList<>();
+        for (int i = 0; i < Math.max(1, headers.size()); i++) {
             row.add("");
         }
-        String tmp = row.get(fromCol);
-        row.set(fromCol, row.get(toCol));
-        row.set(toCol, tmp);
-        selectedCol = toCol;
+        if (table.isEmpty()) {
+            table.add(row);
+            selectedRow = 0;
+            selectedCol = headers.isEmpty() ? 0 : headers.get(0).index();
+        } else {
+            int insertAt = Math.min(rowIndex + 1, table.size());
+            table.add(insertAt, row);
+            if (selectedRow >= insertAt) {
+                selectedRow++;
+            }
+        }
         rebuildList();
     }
 
@@ -701,6 +703,13 @@ public class CsvTableScreen extends Screen {
         int innerX = CONTENT_MARGIN;
 
         int y = contentTop;
+        if (paramSubtitle != null) {
+            int pw = font.width(paramSubtitle.getMessage());
+            paramSubtitle.setWidth(Math.min(pw, innerW));
+            paramSubtitle.setHeight(9);
+            paramSubtitle.setPosition(innerX + (innerW - paramSubtitle.getWidth()) / 2, y);
+            y += 12 + TOP_STACK_GAP;
+        }
         if (searchBox != null) {
             int searchW = Math.min(360, innerW);
             searchBox.setWidth(searchW);
@@ -731,13 +740,6 @@ public class CsvTableScreen extends Screen {
         }
 
         int editY = statusY - BUTTON_H - LIST_GAP;
-        if (structureRow != null) {
-            structureRow.arrangeElements();
-            int rowW = Math.min(structureRow.getWidth(), innerW);
-            structureRow.setPosition(innerX, editY);
-            structureRow.arrangeElements();
-            editY -= BUTTON_H + 4;
-        }
         if (editRow != null) {
             editRow.arrangeElements();
             editRow.setPosition(innerX, editY);
@@ -748,7 +750,6 @@ public class CsvTableScreen extends Screen {
         int listBottom = editY - LIST_GAP;
         int listH = Math.max(44, listBottom - listTop);
         if (tableList != null) {
-            // Set X before/with size so left-aligned hit-testing matches painted rows.
             tableList.setX(innerX);
             tableList.updateSizeAndPosition(innerW, listH, listTop);
             tableList.setX(innerX);
@@ -770,6 +771,134 @@ public class CsvTableScreen extends Screen {
             super(0, 0, 100, COL_HEADER_H, Component.empty());
         }
 
+        private int leftClusterWidth() {
+            return 3 * HDR_ICON_STEP - 1;
+        }
+
+        private int rightClusterWidth() {
+            return leftClusterWidth();
+        }
+
+        private void drawIcon(GuiGraphics graphics, int x, int y, String glyph, int mouseX, int mouseY, boolean enabled) {
+            if (!enabled) {
+                return;
+            }
+            boolean hover = mouseX >= x && mouseX < x + HDR_ICON && mouseY >= y && mouseY < y + HDR_ICON;
+            if (hover) {
+                graphics.fill(x, y, x + HDR_ICON, y + HDR_ICON, 0x55FFFFFF);
+            }
+            int color = enabled ? 0xFFE8E8F0 : 0xFF777788;
+            graphics.drawString(font, glyph, x + (HDR_ICON - font.width(glyph)) / 2, y + 2, color);
+        }
+
+        private void renderColumn(
+                GuiGraphics graphics,
+                int colVisual,
+                int colX,
+                int colW,
+                int mouseX,
+                int mouseY,
+                int clipLeft,
+                int clipRight
+        ) {
+            if (colX + colW <= clipLeft || colX >= clipRight) {
+                return;
+            }
+            boolean mutate = canMutateColumns();
+            boolean first = colVisual == 0;
+            boolean last = colVisual == headers.size() - 1;
+            int iconY = getY() + (COL_HEADER_H - HDR_ICON) / 2;
+            int labelX = colX;
+            int labelMax = colW;
+            if (mutate) {
+                int lc = leftClusterWidth();
+                int rc = rightClusterWidth();
+                drawIcon(graphics, colX, iconY, "+", mouseX, mouseY, true);
+                drawIcon(graphics, colX + HDR_ICON_STEP, iconY, "←", mouseX, mouseY, !first);
+                drawIcon(graphics, colX + 2 * HDR_ICON_STEP, iconY, "−", mouseX, mouseY, true);
+                int rightX = colX + colW - rc;
+                drawIcon(graphics, rightX, iconY, "−", mouseX, mouseY, true);
+                drawIcon(graphics, rightX + HDR_ICON_STEP, iconY, "→", mouseX, mouseY, !last);
+                drawIcon(graphics, rightX + 2 * HDR_ICON_STEP, iconY, "+", mouseX, mouseY, true);
+                labelX = colX + lc + 2;
+                labelMax = Math.max(8, colW - lc - rc - 4);
+            }
+            String label = headers.get(colVisual).label();
+            String shown = label;
+            if (font.width(shown) > labelMax) {
+                shown = font.plainSubstrByWidth(shown, Math.max(8, labelMax - font.width("…"))) + "…";
+            }
+            graphics.drawString(font, shown, labelX, getY() + 6, 0xFFFFD080);
+        }
+
+        private @Nullable HeaderHit hitAt(double mouseX, double mouseY) {
+            if (tableList == null || !canMutateColumns()) {
+                return null;
+            }
+            int iconY = getY() + (COL_HEADER_H - HDR_ICON) / 2;
+            if (mouseY < iconY || mouseY >= iconY + HDR_ICON) {
+                return null;
+            }
+            int x = tableList.contentOriginX() + INDEX_W;
+            for (int i = 0; i < headers.size(); i++) {
+                int colW = i < columnWidths.length ? columnWidths[i] : COL_MIN;
+                int colIndex = headers.get(i).index();
+                boolean first = i == 0;
+                boolean last = i == headers.size() - 1;
+                int colX = x;
+                int lc = leftClusterWidth();
+                int rc = rightClusterWidth();
+                if (mouseX >= colX && mouseX < colX + lc) {
+                    int rel = (int) mouseX - colX;
+                    int slot = rel / HDR_ICON_STEP;
+                    return switch (slot) {
+                        case 0 -> new HeaderHit(HeaderAction.INSERT_BEFORE, colIndex);
+                        case 1 -> first ? null : new HeaderHit(HeaderAction.MOVE_LEFT, colIndex);
+                        case 2 -> new HeaderHit(HeaderAction.DELETE, colIndex);
+                        default -> null;
+                    };
+                }
+                int rightX = colX + colW - rc;
+                if (mouseX >= rightX && mouseX < colX + colW) {
+                    int rel = (int) mouseX - rightX;
+                    int slot = rel / HDR_ICON_STEP;
+                    return switch (slot) {
+                        case 0 -> new HeaderHit(HeaderAction.DELETE, colIndex);
+                        case 1 -> last ? null : new HeaderHit(HeaderAction.MOVE_RIGHT, colIndex);
+                        case 2 -> new HeaderHit(HeaderAction.INSERT_AFTER, colIndex);
+                        default -> null;
+                    };
+                }
+                x += colW + 4;
+            }
+            return null;
+        }
+
+        private void applyHit(HeaderHit hit) {
+            AcmUi.playClick();
+            selectedCol = hit.colIndex();
+            switch (hit.action()) {
+                case INSERT_BEFORE -> insertColumnAt(hit.colIndex());
+                case INSERT_AFTER -> insertColumnAfter(hit.colIndex());
+                case MOVE_LEFT -> moveColumnLeft(hit.colIndex());
+                case MOVE_RIGHT -> moveColumnRight(hit.colIndex());
+                case DELETE -> deleteColumnAt(hit.colIndex());
+            }
+        }
+
+        @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            if (button != 0) {
+                return false;
+            }
+            HeaderHit hit = hitAt(mouseX, mouseY);
+            if (hit == null) {
+                return false;
+            }
+            applyHit(hit);
+            return true;
+        }
+
         @Override
         protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
             if (tableList == null) {
@@ -782,15 +911,7 @@ public class CsvTableScreen extends Screen {
                 int x = tableList.contentOriginX() + INDEX_W;
                 for (int i = 0; i < headers.size(); i++) {
                     int colW = i < columnWidths.length ? columnWidths[i] : COL_MIN;
-                    String label = headers.get(i).label();
-                    String shown = label;
-                    if (font.width(shown) > colW) {
-                        shown = font.plainSubstrByWidth(shown, Math.max(8, colW - font.width("…"))) + "…";
-                    }
-                    // Draw at true X; scissor clips partial columns (do not clamp X — that overlaps neighbors).
-                    if (x + colW > clipLeft && x < clipRight) {
-                        graphics.drawString(font, shown, x, getY() + 2, 0xFFFFD080);
-                    }
+                    renderColumn(graphics, i, x, colW, mouseX, mouseY, clipLeft, clipRight);
                     x += colW + 4;
                 }
             } finally {
@@ -802,12 +923,22 @@ public class CsvTableScreen extends Screen {
         protected void updateWidgetNarration(NarrationElementOutput output) {}
     }
 
+    private enum HeaderAction {
+        INSERT_BEFORE,
+        INSERT_AFTER,
+        MOVE_LEFT,
+        MOVE_RIGHT,
+        DELETE
+    }
+
+    private record HeaderHit(HeaderAction action, int colIndex) {}
+
     private final class TableList extends ObjectSelectionList<TableList.Entry> {
         private double horizontalScroll;
         private boolean draggingHScroll;
 
         TableList(Minecraft minecraft) {
-            super(minecraft, CsvTableScreen.this.width, CsvTableScreen.this.height, 0, 22);
+            super(minecraft, CsvTableScreen.this.width, CsvTableScreen.this.height, 0, ROW_ITEM_H);
         }
 
         void replaceRows(List<IndexedTableRow> rows) {
@@ -859,9 +990,6 @@ public class CsvTableScreen extends Screen {
 
         @Override
         public int getRowWidth() {
-            // Viewport only — never contentWidth. Wide CSV scrolls via horizontalScroll in paint/click.
-            // Coupling getRowWidth to content pushes the vertical scrollbar off-screen and breaks
-            // 1.21.1 centered hit-testing / selection overlay size.
             return Math.max(1, getWidth() - 8);
         }
 
@@ -870,22 +998,6 @@ public class CsvTableScreen extends Screen {
             return getX() + 2;
         }
 
-        @Override
-        protected int getScrollbarPosition() {
-            return getX() + getWidth() - 6;
-        }
-
-        /** Cell highlight only — no vanilla full-row selection frame. */
-        @Override
-        protected boolean isSelectedItem(int index) {
-            return false;
-        }
-
-        @Override
-        protected void renderSelection(GuiGraphics graphics, int top, int width, int height, int outerColor, int innerColor) {
-        }
-
-        /** Mouse wheel: vertical only — ignore horizontal wheel / trackpad X. */
         @Override
         public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
             return super.mouseScrolled(mouseX, mouseY, 0.0, scrollY);
@@ -907,27 +1019,11 @@ public class CsvTableScreen extends Screen {
                     return true;
                 }
             }
-            // Left-aligned row hit-test (vanilla centers getRowWidth and misses wide single rows).
-            if (button == 0 && isMouseOver(mouseX, mouseY)) {
-                int left = getRowLeft();
-                int right = left + getRowWidth();
-                int relativeY = net.minecraft.util.Mth.floor(mouseY - (double) getY()) - this.headerHeight
-                        + (int) getScrollAmount() - 4;
-                int index = relativeY / this.itemHeight;
-                if (mouseX >= left && mouseX <= right && index >= 0 && relativeY >= 0 && index < getItemCount()) {
-                    Entry entry = children().get(index);
-                    if (entry.mouseClicked(mouseX, mouseY, button)) {
-                        setFocused(entry);
-                        setDragging(true);
-                        return true;
-                    }
-                }
-            }
             return super.mouseClicked(mouseX, mouseY, button);
         }
 
         @Override
-        public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
+        public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
             if (draggingHScroll && hasHorizontalScroll()) {
                 int thumbW = hScrollThumbW();
                 int trackW = getWidth() - 4 - thumbW;
@@ -937,7 +1033,7 @@ public class CsvTableScreen extends Screen {
                 }
                 return true;
             }
-            return super.mouseDragged(mouseX, mouseY, button, dx, dy);
+            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
         }
 
         @Override
@@ -962,6 +1058,8 @@ public class CsvTableScreen extends Screen {
         final class Entry extends ObjectSelectionList.Entry<Entry> {
             private final int rowIndex;
             private final List<String> cells;
+            private int layoutTop;
+            private int layoutHeight;
 
             Entry(int rowIndex, List<String> cells) {
                 this.rowIndex = rowIndex;
@@ -975,17 +1073,37 @@ public class CsvTableScreen extends Screen {
 
             @Override
             public void render(GuiGraphics graphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
+                layoutTop = top;
+                layoutHeight = height;
                 int clipLeft = TableList.this.getX() + 2;
                 int clipRight = TableList.this.getX() + TableList.this.getWidth() - 2;
                 int x = contentOriginX();
-                int y = top + (height - 8) / 2;
+                int rowHeight = layoutHeight;
+                int mainY = top + (ROW_MAIN_H - 8) / 2;
                 int rowTop = top + 1;
-                int rowBottom = top + height - 1;
+                int rowBottom = top + ROW_MAIN_H - 1;
                 String indexLabel = "#" + rowIndex;
                 int indexColor = rowIndex == selectedRow ? 0xFFFFFF80 : 0xFFAAAAAA;
-                // True X + list scissor — never clamp text X into the viewport (causes column overlap).
                 if (x + INDEX_W > clipLeft && x < clipRight) {
-                    graphics.drawString(font, indexLabel, x, y, indexColor);
+                    graphics.drawString(font, indexLabel, x + 2, mainY, indexColor);
+                    int minusX = x + INDEX_W - HDR_ICON - 2;
+                    boolean minusHover = mouseX >= minusX && mouseX < minusX + HDR_ICON
+                            && mouseY >= rowTop && mouseY < rowBottom;
+                    if (minusHover) {
+                        graphics.fill(minusX, rowTop, minusX + HDR_ICON, rowBottom, 0x55FF8080);
+                    }
+                    graphics.drawString(font, "−", minusX + (HDR_ICON - font.width("−")) / 2, mainY, 0xFFE8E8F0);
+                }
+                int addY = top + ROW_MAIN_H + 2;
+                int addH = rowHeight - ROW_MAIN_H - 2;
+                if (addH > 6 && x + INDEX_W > clipLeft && x < clipRight) {
+                    int plusX = x + (INDEX_W - HDR_ICON) / 2;
+                    boolean plusHover = mouseX >= plusX && mouseX < plusX + HDR_ICON
+                            && mouseY >= addY && mouseY < addY + addH;
+                    if (plusHover) {
+                        graphics.fill(plusX, addY, plusX + HDR_ICON, addY + addH, 0x5544FF44);
+                    }
+                    graphics.drawString(font, "+", plusX + (HDR_ICON - font.width("+")) / 2, addY + 1, 0xFF88FF88);
                 }
                 x += INDEX_W;
                 for (int i = 0; i < headers.size(); i++) {
@@ -1005,7 +1123,7 @@ public class CsvTableScreen extends Screen {
                         shown = font.plainSubstrByWidth(shown, Math.max(8, colW - font.width("…"))) + "…";
                     }
                     if (x + colW > clipLeft && x < clipRight) {
-                        graphics.drawString(font, shown, x, y, selected ? 0xFFFFFFA0 : 0xFFFFFFFF);
+                        graphics.drawString(font, shown, x, mainY, selected ? 0xFFFFFFA0 : 0xFFFFFFFF);
                     }
                     x += colW + 4;
                 }
@@ -1013,6 +1131,30 @@ public class CsvTableScreen extends Screen {
 
             @Override
             public boolean mouseClicked(double mouseX, double mouseY, int button) {
+                if (button != 0) {
+                    return false;
+                }
+                int top = layoutTop;
+                int rowHeight = layoutHeight > 0 ? layoutHeight : ROW_ITEM_H;
+                int originX = contentOriginX();
+                int rowTop = top + 1;
+                int rowBottom = top + ROW_MAIN_H - 1;
+                int minusX = originX + INDEX_W - HDR_ICON - 2;
+                double mx = mouseX;
+                double my = mouseY;
+                if (mx >= minusX && mx < minusX + HDR_ICON && my >= rowTop && my < rowBottom) {
+                    AcmUi.playClick();
+                    removeRowAt(rowIndex);
+                    return true;
+                }
+                int addY = top + ROW_MAIN_H + 2;
+                int addH = rowHeight - ROW_MAIN_H - 2;
+                int plusX = originX + (INDEX_W - HDR_ICON) / 2;
+                if (addH > 6 && mx >= plusX && mx < plusX + HDR_ICON && my >= addY && my < addY + addH) {
+                    AcmUi.playClick();
+                    insertEmptyRowAfter(rowIndex);
+                    return true;
+                }
                 selectedRow = rowIndex;
                 int relative = (int) mouseX - contentOriginX() - INDEX_W;
                 selectedCol = headers.isEmpty() ? 0 : headers.get(0).index();
@@ -1030,7 +1172,6 @@ public class CsvTableScreen extends Screen {
                     String cell = selectedCol < cells.size() ? cells.get(selectedCol) : "";
                     cellBox.setValue(cell);
                 }
-                // Color-typed columns open the picker on click (Clearer than a separate Color button).
                 if (isSelectedColorCell()) {
                     minecraft.execute(CsvTableScreen.this::pickColorForCell);
                 } else {

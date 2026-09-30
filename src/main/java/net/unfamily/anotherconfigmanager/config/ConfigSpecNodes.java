@@ -515,6 +515,6 @@ public final class ConfigSpecNodes {
     }
 
     public static String typeLabel(net.neoforged.fml.config.ModConfig.Type type) {
-        return type.name().toLowerCase(Locale.ROOT);
+        return ConfigTypeLabels.label(type).getString();
     }
 }
