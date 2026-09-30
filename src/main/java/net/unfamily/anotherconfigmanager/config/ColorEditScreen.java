@@ -1,14 +1,13 @@
 package net.unfamily.anotherconfigmanager.config;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
+import net.unfamily.anotherconfigmanager.client.gui.AcmButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.unfamily.anotherconfigmanager.client.gui.color.HsvColorPickerPanel;
@@ -114,7 +113,10 @@ public class ColorEditScreen extends Screen {
 
         LinearLayout header = layout.addToHeader(LinearLayout.vertical().spacing(0));
         header.defaultCellSetting().alignHorizontallyCenter();
-        header.addChild(new StringWidget(title, font));
+        Component headerTitle = parent instanceof ConfigOpenerScreen.SpecScreen specScreen
+                ? specScreen.stickyHeaderTitle()
+                : title;
+        header.addChild(new StringWidget(headerTitle, font));
 
         int pickerW = HsvColorPickerPanel.SV_SIZE + 8 + HsvColorPickerPanel.HUE_BAR_W + 8 + HsvColorPickerPanel.SWATCH_SIZE;
         int px = (width - pickerW) / 2;
@@ -178,10 +180,11 @@ public class ColorEditScreen extends Screen {
         addRenderableWidget(status);
 
         buttonRow = LinearLayout.horizontal().spacing(8);
-        buttonRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.apply"), b -> apply())
-                .width(100)
-                .build());
-        buttonRow.addChild(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose()).width(100).build());
+        buttonRow.addChild(AcmButton.text(100,
+                Component.translatable("screen.another_config_manager.config.apply"),
+                this::apply));
+        buttonRow.addChild(AcmButton.text(100,
+                Component.translatable("screen.another_config_manager.config.back"), this::onClose));
         buttonRow.visitWidgets(this::addRenderableWidget);
 
         layout.visitWidgets(this::addRenderableWidget);

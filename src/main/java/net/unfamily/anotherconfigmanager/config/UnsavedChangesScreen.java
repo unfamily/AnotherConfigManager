@@ -1,11 +1,11 @@
 package net.unfamily.anotherconfigmanager.config;
 
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.unfamily.anotherconfigmanager.client.gui.AcmButton;
 
 /**
  * Confirmation dialog shown when leaving a dirty config session.
@@ -31,16 +31,16 @@ public class UnsavedChangesScreen extends Screen {
         header.addChild(new StringWidget(Component.translatable("screen.another_config_manager.config.unsaved.message"), font));
 
         LinearLayout footer = layout.addToFooter(LinearLayout.horizontal().spacing(8));
-        footer.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.unsaved.save"), button -> {
+        footer.addChild(AcmButton.text(100, Component.translatable("screen.another_config_manager.config.unsaved.save"), () -> {
             session.commit();
             onSavedOrDiscarded.run();
-        }).width(100).build());
-        footer.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.unsaved.discard"), button -> {
+        }));
+        footer.addChild(AcmButton.text(100, Component.translatable("screen.another_config_manager.config.unsaved.discard"), () -> {
             session.discard();
             onSavedOrDiscarded.run();
-        }).width(100).build());
-        footer.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.unsaved.cancel"), button ->
-                minecraft.setScreen(parent)).width(100).build());
+        }));
+        footer.addChild(AcmButton.text(100, Component.translatable("screen.another_config_manager.config.unsaved.cancel"), () ->
+                minecraft.setScreen(parent)));
 
         layout.visitWidgets(this::addRenderableWidget);
         repositionElements();

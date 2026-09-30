@@ -2,7 +2,6 @@ package net.unfamily.anotherconfigmanager.config;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.StringWidget;
@@ -11,11 +10,12 @@ import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import net.unfamily.anotherconfigmanager.client.gui.AcmButton;
+import net.unfamily.anotherconfigmanager.client.gui.AcmUi;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -47,16 +47,21 @@ public class ConfigOpenerScreen extends Screen {
         layout.addTitleHeader(title, font);
 
         typeList = layout.addToContents(new TypeList(minecraft));
-        for (ModConfig config : configs) {
+        for (ModConfig config : ConfigTypeLabels.sorted(configs)) {
             typeList.addConfig(config);
         }
 
         LinearLayout footer = layout.addToFooter(LinearLayout.horizontal().spacing(8));
-        footer.addChild(Button.builder(
+        footer.addChild(AcmButton.text(
+                120,
                 Component.translatable("screen.another_config_manager.config.mods_browser"),
-                button -> minecraft.setScreen(new ConfigModBrowserScreen(this))
-        ).width(120).build());
-        footer.addChild(Button.builder(CommonComponents.GUI_DONE, button -> onClose()).width(120).build());
+                () -> minecraft.setScreen(new ConfigModBrowserScreen(this))
+        ));
+        footer.addChild(AcmButton.text(
+                120,
+                Component.translatable("screen.another_config_manager.config.return_to_list"),
+                this::onClose
+        ));
         layout.visitWidgets(this::addRenderableWidget);
         repositionElements();
     }
@@ -109,7 +114,7 @@ public class ConfigOpenerScreen extends Screen {
 
             @Override
             public Component getNarration() {
-                return Component.literal(ConfigSpecNodes.typeLabel(config.getType()));
+                return ConfigTypeLabels.label(config.getType());
             }
 
             @Override
@@ -118,7 +123,7 @@ public class ConfigOpenerScreen extends Screen {
                 if (hovering && allowed) {
                     graphics.fill(getContentX() - 2, getContentY(), getContentX() + getRowWidth(), getContentY() + 26, 0x22FFFFFF);
                 }
-                String type = config.getType().name();
+                String type = ConfigTypeLabels.label(config.getType()).getString();
                 String file = config.getFileName();
                 graphics.text(font, type, getContentX(), getContentY() + 4, allowed ? 0xFFFFFFFF : 0xFF888888);
                 graphics.text(font, file, getContentX(), getContentY() + 15, allowed ? 0xFFAAAAAA : 0xFF666666);
@@ -127,6 +132,7 @@ public class ConfigOpenerScreen extends Screen {
             @Override
             public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
                 if (ConfigAccessPolicy.canOpenType(config.getType())) {
+                    AcmUi.playClick();
                     openConfig(config);
                 }
                 return true;
@@ -145,7 +151,9 @@ public class ConfigOpenerScreen extends Screen {
         private static final int FOOTER_MARGIN = 14;
         private static final int TOP_STACK_GAP = 10;
         private static final int LIST_GAP = 12;
-        private static final int BUTTON_H = 20;
+        private static final int BUTTON_H = AcmButton.HEIGHT;
+        private static final int ICON = AcmButton.ICON_SIZE;
+        private static final int ICON_GAP = 2;
 
         private final @Nullable Screen lastScreen;
         private final ConfigOpenerScreen typesScreen;
@@ -160,9 +168,8 @@ public class ConfigOpenerScreen extends Screen {
         private @Nullable StringWidget modTitleWidget;
         private @Nullable StringWidget pathWidget;
         private @Nullable LinearLayout buttonRow;
-        private @Nullable Button saveButton;
-        private @Nullable Button undoButton;
-        private @Nullable Button channelSelectButton;
+        private @Nullable AcmButton saveButton;
+        private @Nullable AcmButton channelSelectButton;
         private String searchQuery = "";
         /** Shared across SpecScreen navigations while picking channels. */
         private ChannelPickState channelPick = new ChannelPickState();
@@ -202,6 +209,11 @@ public class ConfigOpenerScreen extends Screen {
 
         public ConfigEditSession session() {
             return session;
+        }
+
+        /** Title shown on this screen and child editors (does not switch to parameter name). */
+        public Component stickyHeaderTitle() {
+            return modHeaderTitle();
         }
 
         private Component modHeaderTitle() {
@@ -251,28 +263,42 @@ public class ConfigOpenerScreen extends Screen {
             rebuildNodeList();
 
             buttonRow = LinearLayout.horizontal().spacing(6);
-            saveButton = buttonRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.save"), button -> {
-                session.commit();
-                refreshInPlace();
-            }).width(68).tooltip(Tooltip.create(Component.translatable("screen.another_config_manager.config.save.tooltip"))).build());
-            undoButton = buttonRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.undo"), button -> {
-                session.undo();
-                refreshInPlace();
-            }).width(68).tooltip(Tooltip.create(Component.translatable("screen.another_config_manager.config.undo.tooltip"))).build());
-            buttonRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.reset_all"), button -> {
-                if (editable) {
-                    session.resetAll();
-                    refreshInPlace();
-                }
-            }).width(80).tooltip(Tooltip.create(Component.translatable("screen.another_config_manager.config.reset_all.tooltip"))).build());
-            channelSelectButton = buttonRow.addChild(Button.builder(
+            saveButton = buttonRow.addChild(AcmButton.text(
+                    68,
+                    Component.translatable("screen.another_config_manager.config.save"),
+                    () -> {
+                        session.commit();
+                        refreshInPlace();
+                    },
+                    Component.translatable("screen.another_config_manager.config.save.tooltip")
+            ));
+            buttonRow.addChild(AcmButton.text(
+                    80,
+                    Component.translatable("screen.another_config_manager.config.reset_all"),
+                    () -> {
+                        if (editable) {
+                            session.resetAll();
+                            refreshInPlace();
+                        }
+                    },
+                    Component.translatable("screen.another_config_manager.config.reset_all.tooltip")
+            ));
+            channelSelectButton = buttonRow.addChild(AcmButton.text(
+                    100,
                     Component.translatable("screen.another_config_manager.config.color.select_channels_short"),
-                    button -> toggleChannelSelectMode()
-            ).width(100).tooltip(Tooltip.create(Component.translatable(
-                    "screen.another_config_manager.config.color.select_channels.tooltip"
-            ))).build());
-            buttonRow.addChild(Button.builder(CommonComponents.GUI_BACK, button -> requestClose()).width(72).build());
-            buttonRow.addChild(Button.builder(CommonComponents.GUI_DONE, button -> requestDone()).width(72).build());
+                    this::toggleChannelSelectMode,
+                    Component.translatable("screen.another_config_manager.config.color.select_channels.tooltip")
+            ));
+            buttonRow.addChild(AcmButton.text(
+                    72,
+                    Component.translatable("screen.another_config_manager.config.back"),
+                    this::requestClose
+            ));
+            buttonRow.addChild(AcmButton.text(
+                    110,
+                    Component.translatable("screen.another_config_manager.config.return_to_list"),
+                    this::requestDone
+            ));
             buttonRow.visitWidgets(this::addRenderableWidget);
 
             layout.visitWidgets(this::addRenderableWidget);
@@ -355,9 +381,6 @@ public class ConfigOpenerScreen extends Screen {
         private void updateActionButtons() {
             if (saveButton != null) {
                 saveButton.active = editable && session.isDirty();
-            }
-            if (undoButton != null) {
-                undoButton.active = editable && session.canUndo();
             }
         }
 
@@ -716,11 +739,53 @@ public class ConfigOpenerScreen extends Screen {
                 }
 
                 private int toggleLeft() {
-                    return getContentX() + getRowWidth() - TOGGLE_WIDTH - 4;
+                    return getContentX() + getRowWidth() - TOGGLE_WIDTH - 4 - actionIconsWidth();
                 }
 
                 private int toggleTop() {
                     return getContentY() + (ROW_HEIGHT - TOGGLE_HEIGHT) / 2;
+                }
+
+                private int actionIconsWidth() {
+                    if (!(node instanceof ConfigSpecNodes.ValueNode value) || !editable) {
+                        return 0;
+                    }
+                    int n = 0;
+                    if (session.isDirty(value.path())) {
+                        n++;
+                    }
+                    if (session.differsFromDefault(value.path())) {
+                        n++;
+                    }
+                    return n == 0 ? 0 : n * (ICON + ICON_GAP) + 4;
+                }
+
+                private int revertIconLeft() {
+                    return getContentX() + getRowWidth() - actionIconsWidth();
+                }
+
+                private int resetIconLeft(ConfigSpecNodes.ValueNode value) {
+                    int x = revertIconLeft();
+                    if (session.isDirty(value.path())) {
+                        x += ICON + ICON_GAP;
+                    }
+                    return x;
+                }
+
+                private int iconTop() {
+                    return getContentY() + (ROW_HEIGHT - ICON) / 2;
+                }
+
+                private void drawIcon(GuiGraphicsExtractor graphics, int x, int y, String glyph, boolean hovered) {
+                    int bg = hovered ? 0xFF3A3A44 : 0xFF2C2C32;
+                    int border = hovered ? 0xFF8A8A9A : 0xFF5A5A68;
+                    graphics.fill(x, y, x + ICON, y + ICON, bg);
+                    graphics.fill(x, y, x + ICON, y + 1, border);
+                    graphics.fill(x, y + ICON - 1, x + ICON, y + ICON, border);
+                    graphics.fill(x, y, x + 1, y + ICON, border);
+                    graphics.fill(x + ICON - 1, y, x + ICON, y + ICON, border);
+                    int tw = font.width(glyph);
+                    graphics.text(font, glyph, x + (ICON - tw) / 2, y + 3, 0xFFE8E8F0);
                 }
 
                 @Override
@@ -768,7 +833,7 @@ public class ConfigOpenerScreen extends Screen {
                         graphics.text(font, defLabel, left + 2, top + 18, 0xFF888888);
                     }
 
-                    int valueRight = left + rowW - 6;
+                    int valueRight = left + rowW - 6 - actionIconsWidth();
                     if (value.kind() == ConfigSpecNodes.ValueKind.BOOLEAN && !readOnly) {
                         boolean on = current instanceof Boolean bool && bool;
                         int bx = toggleLeft();
@@ -808,6 +873,30 @@ public class ConfigOpenerScreen extends Screen {
                         graphics.text(font, right, valueRight - tw, top + 12, color);
                     }
 
+                    if (editable) {
+                        int iy = iconTop();
+                        if (session.isDirty(value.path())) {
+                            int ix = revertIconLeft();
+                            boolean hov = mouseX >= ix && mouseX < ix + ICON && mouseY >= iy && mouseY < iy + ICON;
+                            drawIcon(graphics, ix, iy, "↶", hov);
+                            if (hov) {
+                                graphics.setTooltipForNextFrame(
+                                        List.of(Component.translatable("screen.another_config_manager.config.revert_value.tooltip").getVisualOrderText()),
+                                        mouseX, mouseY);
+                            }
+                        }
+                        if (session.differsFromDefault(value.path())) {
+                            int ix = resetIconLeft(value);
+                            boolean hov = mouseX >= ix && mouseX < ix + ICON && mouseY >= iy && mouseY < iy + ICON;
+                            drawIcon(graphics, ix, iy, "↺", hov);
+                            if (hov) {
+                                graphics.setTooltipForNextFrame(
+                                        List.of(Component.translatable("screen.another_config_manager.config.reset_value.tooltip").getVisualOrderText()),
+                                        mouseX, mouseY);
+                            }
+                        }
+                    }
+
                     if (hovering) {
                         String comment = ConfigSpecNodes.commentOf(value.value());
                         List<FormattedCharSequence> tip = ConfigComments.tooltipSequences(font, comment);
@@ -819,6 +908,30 @@ public class ConfigOpenerScreen extends Screen {
 
                 @Override
                 public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+                    if (node instanceof ConfigSpecNodes.ValueNode value && editable) {
+                        int iy = iconTop();
+                        double mx = event.x();
+                        double my = event.y();
+                        if (session.isDirty(value.path())) {
+                            int ix = revertIconLeft();
+                            if (mx >= ix && mx < ix + ICON && my >= iy && my < iy + ICON) {
+                                AcmUi.playClick();
+                                session.revertValue(value.path());
+                                refreshInPlace();
+                                return true;
+                            }
+                        }
+                        if (session.differsFromDefault(value.path())) {
+                            int ix = resetIconLeft(value);
+                            if (mx >= ix && mx < ix + ICON && my >= iy && my < iy + ICON) {
+                                AcmUi.playClick();
+                                session.resetValue(value.path());
+                                refreshInPlace();
+                                return true;
+                            }
+                        }
+                    }
+                    AcmUi.playClick();
                     openNode(node);
                     return true;
                 }
@@ -835,7 +948,7 @@ public class ConfigOpenerScreen extends Screen {
         private static final int FOOTER_MARGIN = 14;
         private static final int TOP_STACK_GAP = 10;
         private static final int LIST_GAP = 12;
-        private static final int BUTTON_H = 20;
+        private static final int BUTTON_H = AcmButton.HEIGHT;
         private static final int CONTENT_MARGIN = 20;
         private static final int MAX_COMMENT_LINES = 8;
 
@@ -845,11 +958,12 @@ public class ConfigOpenerScreen extends Screen {
         private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this, HEADER_H, FOOTER_MARGIN);
         private final List<StringWidget> commentWidgets = new ArrayList<>();
         private EditBox editBox;
+        private @Nullable StringWidget paramLabel;
         private @Nullable StringWidget status;
         private @Nullable LinearLayout buttonRow;
 
         public ValueEditScreen(SpecScreen parent, ConfigEditSession session, ConfigSpecNodes.ValueNode node) {
-            super(Component.literal(node.displayName()));
+            super(parent.stickyHeaderTitle());
             this.parent = parent;
             this.session = session;
             this.node = node;
@@ -862,7 +976,7 @@ public class ConfigOpenerScreen extends Screen {
 
             LinearLayout header = layout.addToHeader(LinearLayout.vertical().spacing(0));
             header.defaultCellSetting().alignHorizontallyCenter();
-            header.addChild(new StringWidget(title, font));
+            header.addChild(new StringWidget(parent.stickyHeaderTitle(), font));
 
             commentWidgets.clear();
             String comment = ConfigSpecNodes.commentOf(node.value());
@@ -890,6 +1004,9 @@ public class ConfigOpenerScreen extends Screen {
                 addRenderableWidget(more);
             }
 
+            paramLabel = new StringWidget(Component.literal(node.displayName()), font);
+            addRenderableWidget(paramLabel);
+
             editBox = new EditBox(font, 0, 0, Math.min(320, Math.max(80, width - CONTENT_MARGIN * 2)), 20,
                     Component.literal(node.displayName()));
             editBox.setMaxLength(1024);
@@ -900,25 +1017,45 @@ public class ConfigOpenerScreen extends Screen {
             status = new StringWidget(Component.empty(), font);
             addRenderableWidget(status);
 
-            buttonRow = LinearLayout.horizontal().spacing(8);
-            buttonRow.addChild(Button.builder(Component.translatable("screen.another_config_manager.config.apply"), button -> apply())
-                    .width(100)
-                    .build());
+            buttonRow = LinearLayout.horizontal().spacing(6);
+            buttonRow.addChild(AcmButton.text(
+                    100,
+                    Component.translatable("screen.another_config_manager.config.apply"),
+                    this::apply
+            ));
             if (!ColorRuleRegistry.hasRule(parent.modId(), parent.configType(), node.path())
                     && ConfigSpecNodes.canDeclareAsColor(node.value())) {
-                buttonRow.addChild(Button.builder(
+                buttonRow.addChild(AcmButton.text(
+                        110,
                         Component.translatable("screen.another_config_manager.config.color.declare"),
-                        button -> declareColor()
-                ).width(110).build());
+                        this::declareColor
+                ));
             }
-            buttonRow.addChild(Button.builder(
-                    Component.translatable("screen.another_config_manager.config.reset_value"),
-                    button -> {
+            if (session.isDirty(node.path())) {
+                buttonRow.addChild(AcmButton.icon(
+                        Component.literal("↶"),
+                        Component.translatable("screen.another_config_manager.config.revert_value.tooltip"),
+                        () -> {
+                            session.revertValue(node.path());
+                            Object v = session.getEffective(node.value());
+                            editBox.setValue(v == null ? "" : String.valueOf(v));
+                        }
+                ));
+            }
+            buttonRow.addChild(AcmButton.icon(
+                    Component.literal("↺"),
+                    Component.translatable("screen.another_config_manager.config.reset_value.tooltip"),
+                    () -> {
                         session.resetValue(node.path());
                         Object def = session.getEffective(node.value());
                         editBox.setValue(def == null ? "" : String.valueOf(def));
-                    }).width(100).build());
-            buttonRow.addChild(Button.builder(CommonComponents.GUI_CANCEL, button -> onClose()).width(100).build());
+                    }
+            ));
+            buttonRow.addChild(AcmButton.text(
+                    100,
+                    Component.translatable("screen.another_config_manager.config.back"),
+                    this::onClose
+            ));
             buttonRow.visitWidgets(this::addRenderableWidget);
 
             layout.visitWidgets(this::addRenderableWidget);
@@ -967,6 +1104,14 @@ public class ConfigOpenerScreen extends Screen {
             y = Math.min(commentY, editBottomLimit - LIST_GAP);
             if (!commentWidgets.isEmpty() && y > layout.getHeaderHeight() + TOP_STACK_GAP) {
                 y += LIST_GAP;
+            }
+
+            if (paramLabel != null) {
+                int pw = font.width(paramLabel.getMessage());
+                paramLabel.setWidth(Math.min(pw, innerW));
+                paramLabel.setHeight(9);
+                paramLabel.setPosition(innerX + (innerW - paramLabel.getWidth()) / 2, y);
+                y += 12;
             }
 
             if (editBox != null) {

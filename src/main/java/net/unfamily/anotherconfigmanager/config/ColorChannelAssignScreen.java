@@ -1,12 +1,10 @@
 package net.unfamily.anotherconfigmanager.config;
 
-import net.minecraft.client.gui.components.Button;
+import net.unfamily.anotherconfigmanager.client.gui.AcmButton;
 import net.minecraft.client.gui.components.StringWidget;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.neoforged.fml.config.ModConfig;
 import org.jetbrains.annotations.Nullable;
@@ -45,7 +43,7 @@ public class ColorChannelAssignScreen extends Screen {
 
     private @Nullable StringWidget status;
     private @Nullable LinearLayout buttonRow;
-    private final List<Button> roleButtons = new ArrayList<>();
+    private final List<AcmButton> roleButtons = new ArrayList<>();
 
     public ColorChannelAssignScreen(
             ConfigOpenerScreen.SpecScreen parent,
@@ -76,7 +74,7 @@ public class ColorChannelAssignScreen extends Screen {
 
         LinearLayout header = layout.addToHeader(LinearLayout.vertical().spacing(2));
         header.defaultCellSetting().alignHorizontallyCenter();
-        header.addChild(new StringWidget(title, font));
+        header.addChild(new StringWidget(parent.stickyHeaderTitle(), font));
         header.addChild(new StringWidget(
                 Component.translatable("screen.another_config_manager.config.color.assign.hint"),
                 font
@@ -97,13 +95,14 @@ public class ColorChannelAssignScreen extends Screen {
             name.setPosition(CONTENT_MARGIN, rowY + 4);
             addRenderableWidget(name);
 
-            Button roleBtn = Button.builder(roleLabel(index), b -> cycleRole(index))
-                    .bounds(CONTENT_MARGIN + Math.min(230, innerW - 80), rowY, 72, BUTTON_H)
-                    .tooltip(Tooltip.create(Component.translatable(
+            AcmButton roleBtn = AcmButton.text(72, roleLabel(index), () -> cycleRole(index),
+                    Component.translatable(
                             "screen.another_config_manager.config.color.assign.role.tooltip",
                             withAlpha ? ", A" : ""
-                    )))
-                    .build();
+                    ));
+            roleBtn.setPosition(CONTENT_MARGIN + Math.min(230, innerW - 80), rowY);
+            roleBtn.setWidth(72);
+            roleBtn.setHeight(BUTTON_H);
             roleButtons.add(roleBtn);
             addRenderableWidget(roleBtn);
             rowY += BUTTON_H + 6;
@@ -113,13 +112,12 @@ public class ColorChannelAssignScreen extends Screen {
         addRenderableWidget(status);
 
         buttonRow = LinearLayout.horizontal().spacing(8);
-        buttonRow.addChild(Button.builder(
+        buttonRow.addChild(AcmButton.text(120,
                 Component.translatable("screen.another_config_manager.config.color.assign.confirm"),
-                b -> confirm()
-        ).width(120).tooltip(Tooltip.create(Component.translatable(
-                "screen.another_config_manager.config.color.assign.confirm.tooltip"
-        ))).build());
-        buttonRow.addChild(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose()).width(100).build());
+                this::confirm,
+                Component.translatable("screen.another_config_manager.config.color.assign.confirm.tooltip")));
+        buttonRow.addChild(AcmButton.text(100,
+                Component.translatable("screen.another_config_manager.config.back"), this::onClose));
         buttonRow.visitWidgets(this::addRenderableWidget);
 
         layout.visitWidgets(this::addRenderableWidget);

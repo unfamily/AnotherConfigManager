@@ -116,6 +116,24 @@ public final class ConfigEditSession {
         setPending(path, snapshot(value.getDefault()));
     }
 
+    /** Revert this path to the value from when the session opened (clears pending). */
+    public boolean revertValue(List<String> path) {
+        String key = pathKey(path);
+        if (!pending.containsKey(key)) {
+            return false;
+        }
+        pending.remove(key);
+        return true;
+    }
+
+    public boolean differsFromDefault(List<String> path) {
+        ModConfigSpec.ConfigValue<?> value = valuesByPath.get(pathKey(path));
+        if (value == null) {
+            return false;
+        }
+        return !Objects.equals(normalize(getEffective(value)), normalize(value.getDefault()));
+    }
+
     public void resetAll() {
         List<String> keys = new ArrayList<>(valuesByPath.keySet());
         for (String key : keys) {
