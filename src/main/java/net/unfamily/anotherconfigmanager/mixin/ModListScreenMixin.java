@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.unfamily.anotherconfigmanager.AcmConfig;
 import net.unfamily.anotherconfigmanager.config.ConfigModBrowserScreen;
+import net.unfamily.anotherconfigmanager.config.ConfigOpenerScreen;
 import net.neoforged.neoforge.client.gui.ModListScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -26,8 +27,9 @@ public class ModListScreenMixin {
         if (!AcmConfig.REPLACE_MODS_BUTTON.get()) {
             return;
         }
-        // Opened from ACM mod browser: keep the native NeoForge list.
-        if (parentScreen instanceof ConfigModBrowserScreen) {
+        // Opened from ACM screens intentionally: keep the native NeoForge list.
+        if (parentScreen instanceof ConfigModBrowserScreen
+                || parentScreen instanceof ConfigOpenerScreen) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();

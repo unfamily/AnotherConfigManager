@@ -13,7 +13,9 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.client.gui.ModListScreen;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import net.unfamily.anotherconfigmanager.AcmConfig;
 import net.unfamily.anotherconfigmanager.client.gui.AcmButton;
 import net.unfamily.anotherconfigmanager.client.gui.AcmUi;
 import org.jetbrains.annotations.Nullable;
@@ -54,13 +56,18 @@ public class ConfigOpenerScreen extends Screen {
         LinearLayout footer = layout.addToFooter(LinearLayout.horizontal().spacing(8));
         footer.addChild(AcmButton.text(
                 120,
-                Component.translatable("screen.another_config_manager.config.mods_browser"),
-                () -> minecraft.setScreen(new ConfigModBrowserScreen(this))
-        ));
-        footer.addChild(AcmButton.text(
-                120,
                 Component.translatable("screen.another_config_manager.config.return_to_list"),
                 this::onClose
+        ));
+        boolean acmIsDefaultMods = AcmConfig.REPLACE_MODS_BUTTON.get();
+        footer.addChild(AcmButton.text(
+                140,
+                Component.translatable(acmIsDefaultMods
+                        ? "screen.another_config_manager.config.neoforge_mod_list"
+                        : "screen.another_config_manager.config.mods_browser"),
+                () -> minecraft.setScreen(acmIsDefaultMods
+                        ? new ModListScreen(this)
+                        : new ConfigModBrowserScreen(this))
         ));
         layout.visitWidgets(this::addRenderableWidget);
         repositionElements();

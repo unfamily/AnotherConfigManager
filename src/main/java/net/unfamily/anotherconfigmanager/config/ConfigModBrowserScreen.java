@@ -11,7 +11,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Util;
 import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.gui.ModListScreen;
 import net.unfamily.anotherconfigmanager.client.gui.AcmButton;
 import net.unfamily.anotherconfigmanager.client.gui.AcmUi;
@@ -77,13 +79,18 @@ public class ConfigModBrowserScreen extends Screen {
         LinearLayout footer = layout.addToFooter(LinearLayout.horizontal().spacing(8));
         footer.addChild(AcmButton.text(
                 120,
-                Component.translatable("screen.another_config_manager.config.neoforge_mod_list"),
-                () -> minecraft.setScreen(new ModListScreen(this))
+                Component.translatable("gui.done"),
+                this::onClose
         ));
         footer.addChild(AcmButton.text(
-                120,
-                Component.translatable("screen.another_config_manager.config.return_to_list"),
-                this::onClose
+                140,
+                Component.translatable("fml.menu.mods.openmodsfolder"),
+                () -> Util.getPlatform().openPath(FMLPaths.MODSDIR.get())
+        ));
+        footer.addChild(AcmButton.text(
+                140,
+                Component.translatable("screen.another_config_manager.config.neoforge_mod_list"),
+                () -> minecraft.setScreen(new ModListScreen(this))
         ));
 
         layout.visitWidgets(this::addRenderableWidget);
