@@ -24,7 +24,6 @@ body:
       label: Have you tested whether the issue is actually caused by this mod?
       description: Try reproducing the issue without other mods, if possible.
       options:
-        - "Please select an option"
         - "Yes"
         - "No"
         - "Not an Issue (Feature Request)"
