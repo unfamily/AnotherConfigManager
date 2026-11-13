@@ -1,5 +1,6 @@
 package net.unfamily.anotherconfigmanager.config;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -23,8 +24,8 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * Searchable list of mods that have NeoForge configs.
- * Row click uses {@link ConfigOpener#open(String)} (native factory including ConfigurationScreen, else Library UI).
+ * Searchable list of all loaded mods. Row click opens config when present.
+ * Mods without NeoForge TOML config show a red third info line; title/meta stay normal.
  */
 public class ConfigModBrowserScreen extends Screen {
     private static final int HEADER_H = 33;
@@ -32,7 +33,7 @@ public class ConfigModBrowserScreen extends Screen {
     private static final int TOP_STACK_GAP = 6;
     private static final int LIST_GAP = 6;
     private static final int SEARCH_H = 20;
-    private static final int ROW_H = 36;
+    private static final int ROW_H = 48;
     private static final int ICON = 28;
 
     private final @Nullable Screen lastScreen;
@@ -46,7 +47,7 @@ public class ConfigModBrowserScreen extends Screen {
     public ConfigModBrowserScreen(@Nullable Screen lastScreen) {
         super(Component.translatable("screen.another_config_manager.config.browser.title"));
         this.lastScreen = lastScreen;
-        this.modIds = List.copyOf(ConfigDiscovery.modIdsWithConfigs());
+        this.modIds = List.copyOf(ConfigDiscovery.allModIds());
     }
 
     @Override
@@ -132,6 +133,13 @@ public class ConfigModBrowserScreen extends Screen {
     }
 
     private void openMod(String modId) {
+        if (!ConfigDiscovery.hasConfigs(modId)) {
+            if (status != null) {
+                status.setMessage(Component.translatable("commands.another_config_manager.config.no_configs", modId));
+                repositionElements();
+            }
+            return;
+        }
         Component failure = ConfigOpener.failureReason(modId);
         if (failure != null) {
             if (status != null) {
@@ -219,9 +227,11 @@ public class ConfigModBrowserScreen extends Screen {
 
         final class Entry extends ObjectSelectionList.Entry<Entry> {
             private final String modId;
+            private final boolean hasConfig;
 
             Entry(String modId) {
                 this.modId = modId;
+                this.hasConfig = ConfigDiscovery.hasConfigs(modId);
             }
 
             @Override
@@ -254,10 +264,17 @@ public class ConfigModBrowserScreen extends Screen {
                     graphics.fill(left + 2, top + 4, left + 2 + ICON, top + 4 + ICON, 0x33FFFFFF);
                     textX = left + 2 + ICON + 8;
                 }
-                Component title = ConfigDisplayNames.modTitle(modId);
-                graphics.drawString(font, title, textX, top + 4, 0xFFFFFFFF);
-                String meta = modId + "  ·  " + versionOf(modId);
-                graphics.drawString(font, meta, textX, top + 18, 0xFFAAAAAA);
+                graphics.drawString(font, ConfigDisplayNames.modTitle(modId), textX, top + 2, 0xFFFFFFFF);
+                graphics.drawString(font, modId + "  ·  " + versionOf(modId), textX, top + 14, 0xFFAAAAAA);
+                if (!hasConfig) {
+                    graphics.drawString(
+                            font,
+                            Component.translatable("screen.another_config_manager.config.browser.no_config.line")
+                                    .withStyle(ChatFormatting.RED),
+                            textX,
+                            top + 26,
+                            0xFFFF5555);
+                }
             }
 
             @Override
