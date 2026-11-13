@@ -3,6 +3,7 @@ package net.unfamily.anotherconfigmanager.config;
 import com.electronwill.nightconfig.core.UnmodifiableConfig;
 import net.unfamily.anotherconfigmanager.AnotherConfigManager;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec.RestartType;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
@@ -10,9 +11,11 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Dirty edit buffer for one {@link ModConfigSpec}: snapshot on open, commit/discard/undo later.
@@ -167,6 +170,32 @@ public final class ConfigEditSession {
             pending.put(entry.pathKey(), snapshot(entry.previousValue()));
         }
         return true;
+    }
+
+    /**
+     * Ordered unique top-level category keys for dirty pending values whose NeoForge
+     * {@link RestartType} is not {@link RestartType#NONE}. Path {@code mixins.ae2} → {@code mixins}.
+     */
+    public List<String> dirtyRestartCategories() {
+        Set<String> categories = new LinkedHashSet<>();
+        for (Map.Entry<String, Object> entry : pending.entrySet()) {
+            Object original = originals.get(entry.getKey());
+            if (Objects.equals(normalize(original), normalize(entry.getValue()))) {
+                continue;
+            }
+            ModConfigSpec.ConfigValue<?> value = valuesByPath.get(entry.getKey());
+            if (value == null) {
+                continue;
+            }
+            RestartType restartType = value.getSpec().restartType();
+            if (restartType == null || restartType == RestartType.NONE) {
+                continue;
+            }
+            String pathKey = entry.getKey();
+            int dot = pathKey.indexOf('.');
+            categories.add(dot < 0 ? pathKey : pathKey.substring(0, dot));
+        }
+        return List.copyOf(categories);
     }
 
     /**

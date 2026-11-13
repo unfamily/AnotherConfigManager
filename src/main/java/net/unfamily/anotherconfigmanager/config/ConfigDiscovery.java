@@ -38,6 +38,23 @@ public final class ConfigDiscovery {
         return ModList.get().isLoaded(modId);
     }
 
+    /** All loaded mod ids (sorted), including mods with no NeoForge configs. */
+    public static List<String> allModIds() {
+        List<String> ids = new ArrayList<>();
+        ModList.get().getMods().forEach(info -> {
+            String modId = info.getModId();
+            if (modId != null && !modId.isBlank()) {
+                ids.add(modId);
+            }
+        });
+        Collections.sort(ids);
+        return ids;
+    }
+
+    public static boolean hasConfigs(String modId) {
+        return !configsFor(modId).isEmpty();
+    }
+
     public static List<ModConfig> configsFor(String modId) {
         if (CONFIGS_BY_MOD == null || modId == null || modId.isBlank()) {
             return List.of();

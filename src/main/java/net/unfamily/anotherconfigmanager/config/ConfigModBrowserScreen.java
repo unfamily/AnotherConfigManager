@@ -1,5 +1,6 @@
 package net.unfamily.anotherconfigmanager.config;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
@@ -25,8 +26,8 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * Searchable list of mods that have NeoForge configs.
- * Row click uses {@link ConfigOpener#open(String)} (native factory including ConfigurationScreen, else Library UI).
+ * Searchable list of all loaded mods. Row click opens config when present.
+ * Mods without NeoForge TOML config show a red third info line; title/meta stay normal.
  */
 public class ConfigModBrowserScreen extends Screen {
     private static final int HEADER_H = 33;
@@ -34,7 +35,7 @@ public class ConfigModBrowserScreen extends Screen {
     private static final int TOP_STACK_GAP = 6;
     private static final int LIST_GAP = 6;
     private static final int SEARCH_H = 20;
-    private static final int ROW_H = 36;
+    private static final int ROW_H = 48;
     private static final int ICON = 28;
 
     private final @Nullable Screen lastScreen;
@@ -48,7 +49,7 @@ public class ConfigModBrowserScreen extends Screen {
     public ConfigModBrowserScreen(@Nullable Screen lastScreen) {
         super(Component.translatable("screen.another_config_manager.config.browser.title"));
         this.lastScreen = lastScreen;
-        this.modIds = List.copyOf(ConfigDiscovery.modIdsWithConfigs());
+        this.modIds = List.copyOf(ConfigDiscovery.allModIds());
     }
 
     @Override
@@ -134,6 +135,13 @@ public class ConfigModBrowserScreen extends Screen {
     }
 
     private void openMod(String modId) {
+        if (!ConfigDiscovery.hasConfigs(modId)) {
+            if (status != null) {
+                status.setMessage(Component.translatable("commands.another_config_manager.config.no_configs", modId));
+                repositionElements();
+            }
+            return;
+        }
         Component failure = ConfigOpener.failureReason(modId);
         if (failure != null) {
             if (status != null) {
@@ -220,9 +228,11 @@ public class ConfigModBrowserScreen extends Screen {
 
         final class Entry extends ObjectSelectionList.Entry<Entry> {
             private final String modId;
+            private final boolean hasConfig;
 
             Entry(String modId) {
                 this.modId = modId;
+                this.hasConfig = ConfigDiscovery.hasConfigs(modId);
             }
 
             @Override
@@ -239,7 +249,6 @@ public class ConfigModBrowserScreen extends Screen {
                 if (logo.isPresent()) {
                     ModLogoTextures.Logo l = logo.get();
                     int draw = ICON;
-                    // Pass full texture as src so the logo scales into ICON×ICON instead of cropping.
                     graphics.blit(
                             RenderPipelines.GUI_TEXTURED,
                             l.location(),
@@ -258,10 +267,17 @@ public class ConfigModBrowserScreen extends Screen {
                     graphics.fill(x + 2, y + 4, x + 2 + ICON, y + 4 + ICON, 0x33FFFFFF);
                     textX = x + 2 + ICON + 8;
                 }
-                Component title = ConfigDisplayNames.modTitle(modId);
-                graphics.text(font, title, textX, y + 4, 0xFFFFFFFF);
-                String meta = modId + "  ·  " + versionOf(modId);
-                graphics.text(font, meta, textX, y + 18, 0xFFAAAAAA);
+                graphics.text(font, ConfigDisplayNames.modTitle(modId), textX, y + 2, 0xFFFFFFFF);
+                graphics.text(font, modId + "  ·  " + versionOf(modId), textX, y + 14, 0xFFAAAAAA);
+                if (!hasConfig) {
+                    graphics.text(
+                            font,
+                            Component.translatable("screen.another_config_manager.config.browser.no_config.line")
+                                    .withStyle(ChatFormatting.RED),
+                            textX,
+                            y + 26,
+                            0xFFFF5555);
+                }
             }
 
             @Override

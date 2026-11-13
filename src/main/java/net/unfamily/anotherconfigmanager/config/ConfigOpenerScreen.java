@@ -273,10 +273,8 @@ public class ConfigOpenerScreen extends Screen {
             saveButton = buttonRow.addChild(AcmButton.text(
                     68,
                     Component.translatable("screen.another_config_manager.config.save"),
-                    () -> {
-                        session.commit();
-                        refreshInPlace();
-                    },
+                    () -> RestartRequiredScreen.saveWithRestartWarning(
+                            this, session, modId, this::refreshInPlace),
                     Component.translatable("screen.another_config_manager.config.save.tooltip")
             ));
             buttonRow.addChild(AcmButton.text(
@@ -451,7 +449,7 @@ public class ConfigOpenerScreen extends Screen {
                 minecraft.setScreen(target);
                 return;
             }
-            minecraft.setScreen(new UnsavedChangesScreen(this, session, () -> minecraft.setScreen(target)));
+            minecraft.setScreen(new UnsavedChangesScreen(this, session, modId, () -> minecraft.setScreen(target)));
         }
 
         private void toggleChannelSelectMode() {

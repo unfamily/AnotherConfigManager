@@ -6,6 +6,7 @@ import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.unfamily.anotherconfigmanager.client.gui.AcmButton;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Confirmation dialog shown when leaving a dirty config session.
@@ -13,13 +14,17 @@ import net.unfamily.anotherconfigmanager.client.gui.AcmButton;
 public class UnsavedChangesScreen extends Screen {
     private final Screen parent;
     private final ConfigEditSession session;
+    @Nullable
+    private final String modId;
     private final Runnable onSavedOrDiscarded;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
 
-    public UnsavedChangesScreen(Screen parent, ConfigEditSession session, Runnable onSavedOrDiscarded) {
+    public UnsavedChangesScreen(
+            Screen parent, ConfigEditSession session, @Nullable String modId, Runnable onSavedOrDiscarded) {
         super(Component.translatable("screen.another_config_manager.config.unsaved.title"));
         this.parent = parent;
         this.session = session;
+        this.modId = modId;
         this.onSavedOrDiscarded = onSavedOrDiscarded;
     }
 
@@ -31,10 +36,8 @@ public class UnsavedChangesScreen extends Screen {
         header.addChild(new StringWidget(Component.translatable("screen.another_config_manager.config.unsaved.message"), font));
 
         LinearLayout footer = layout.addToFooter(LinearLayout.horizontal().spacing(8));
-        footer.addChild(AcmButton.text(100, Component.translatable("screen.another_config_manager.config.unsaved.save"), () -> {
-            session.commit();
-            onSavedOrDiscarded.run();
-        }));
+        footer.addChild(AcmButton.text(100, Component.translatable("screen.another_config_manager.config.unsaved.save"), () ->
+                RestartRequiredScreen.saveWithRestartWarning(this, session, modId, onSavedOrDiscarded)));
         footer.addChild(AcmButton.text(100, Component.translatable("screen.another_config_manager.config.unsaved.discard"), () -> {
             session.discard();
             onSavedOrDiscarded.run();
