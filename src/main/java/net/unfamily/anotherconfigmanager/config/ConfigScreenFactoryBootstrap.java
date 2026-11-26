@@ -116,14 +116,14 @@ public final class ConfigScreenFactoryBootstrap {
             if (minecraft == null) {
                 return false;
             }
-            Screen screen = factory.get().createScreen(container, minecraft.screen);
+            Screen screen = factory.get().createScreen(container, minecraft.gui.screen());
             if (screen == null) {
                 return false;
             }
             if (replaceNeoForgeUi && screen instanceof ConfigurationScreen) {
                 return false;
             }
-            minecraft.setScreen(screen);
+            minecraft.gui.setScreen(screen);
             return true;
         }).orElse(false);
     }

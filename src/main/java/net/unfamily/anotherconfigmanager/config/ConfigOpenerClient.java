@@ -17,7 +17,7 @@ public final class ConfigOpenerClient {
         if (minecraft == null) {
             return false;
         }
-        minecraft.setScreen(new ConfigOpenerScreen(minecraft.screen, modId, configs));
+        minecraft.gui.setScreen(new ConfigOpenerScreen(minecraft.gui.screen(), modId, configs));
         return true;
     }
 
@@ -34,8 +34,8 @@ public final class ConfigOpenerClient {
         }
         boolean editable = ConfigAccessPolicy.canEdit(config.getType());
         ConfigEditSession session = new ConfigEditSession(spec);
-        ConfigOpenerScreen types = new ConfigOpenerScreen(minecraft.screen, modId, List.of(config));
-        minecraft.setScreen(new ConfigOpenerScreen.SpecScreen(
+        ConfigOpenerScreen types = new ConfigOpenerScreen(minecraft.gui.screen(), modId, List.of(config));
+        minecraft.gui.setScreen(new ConfigOpenerScreen.SpecScreen(
                 types, types, modId, config, session, List.of(), editable));
         return true;
     }
@@ -45,7 +45,7 @@ public final class ConfigOpenerClient {
         if (minecraft == null) {
             return false;
         }
-        minecraft.setScreen(new ConfigModBrowserScreen(minecraft.screen));
+        minecraft.gui.setScreen(new ConfigModBrowserScreen(minecraft.gui.screen()));
         return true;
     }
 }

@@ -5,7 +5,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.unfamily.anotherconfigmanager.AcmConfig;
 import net.unfamily.anotherconfigmanager.config.ConfigModBrowserScreen;
 import net.unfamily.anotherconfigmanager.config.ConfigOpenerScreen;
-import net.neoforged.neoforge.client.gui.ModListScreen;
+import net.neoforged.neoforge.client.gui.modlist.ModListScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class ModListScreenMixin {
 
     @Shadow
-    private Screen parentScreen;
+    private Screen lastScreen;
 
     @Inject(method = "init", at = @At("HEAD"), cancellable = true, remap = false)
     private void acm$redirectModsButtonToBrowser(CallbackInfo ci) {
@@ -28,15 +28,15 @@ public class ModListScreenMixin {
             return;
         }
         // Opened from ACM screens intentionally: keep the native NeoForge list.
-        if (parentScreen instanceof ConfigModBrowserScreen
-                || parentScreen instanceof ConfigOpenerScreen) {
+        if (lastScreen instanceof ConfigModBrowserScreen
+                || lastScreen instanceof ConfigOpenerScreen) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft == null) {
             return;
         }
-        minecraft.setScreen(new ConfigModBrowserScreen(parentScreen));
+        minecraft.gui.setScreen(new ConfigModBrowserScreen(lastScreen));
         ci.cancel();
     }
 }

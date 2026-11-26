@@ -4,6 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.Font;
+import net.minecraft.network.chat.TextColor;
 
 import java.util.function.IntConsumer;
 
@@ -170,10 +171,11 @@ public final class HsvColorPickerPanel {
             ChatFormatting[] palette = ChatFormatting.values();
             int index = 0;
             for (ChatFormatting formatting : palette) {
-                Integer color = formatting.getColor();
-                if (color == null) {
+                TextColor textColor = TextColor.fromLegacyFormat(formatting);
+                if (textColor == null) {
                     continue;
                 }
+                int color = textColor.getValue();
                 int col = index % PALETTE_COLS;
                 int row = index / PALETTE_COLS;
                 int px = x + col * (PALETTE_SIZE + PALETTE_GAP);
@@ -258,10 +260,11 @@ public final class HsvColorPickerPanel {
             ChatFormatting[] palette = ChatFormatting.values();
             int index = 0;
             for (ChatFormatting formatting : palette) {
-                Integer color = formatting.getColor();
-                if (color == null) {
+                TextColor textColor = TextColor.fromLegacyFormat(formatting);
+                if (textColor == null) {
                     continue;
                 }
+                int color = textColor.getValue();
                 int col = index % PALETTE_COLS;
                 int row = index / PALETTE_COLS;
                 int px = x + col * (PALETTE_SIZE + PALETTE_GAP);

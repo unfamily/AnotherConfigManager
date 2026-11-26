@@ -215,7 +215,7 @@ public class ColorChannelAssignScreen extends Screen {
         ColorBindingLine.Parsed binding = ColorRuleRegistry.declarePaths(
                 modId, configType, dotted, order.toString());
         parent.refreshAfterChildEdit();
-        minecraft.setScreen(new ColorEditScreen(
+        minecraft.gui.setScreen(new ColorEditScreen(
                 parent,
                 session,
                 binding,
@@ -244,6 +244,6 @@ public class ColorChannelAssignScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 }

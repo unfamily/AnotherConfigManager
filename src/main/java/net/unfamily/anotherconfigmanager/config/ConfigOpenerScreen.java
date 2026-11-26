@@ -13,7 +13,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.fml.config.ModConfig;
-import net.neoforged.neoforge.client.gui.ModListScreen;
+import net.neoforged.neoforge.client.gui.modlist.ModListScreen;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.unfamily.anotherconfigmanager.AcmConfig;
 import net.unfamily.anotherconfigmanager.client.gui.AcmButton;
@@ -65,8 +65,8 @@ public class ConfigOpenerScreen extends Screen {
                 Component.translatable(acmIsDefaultMods
                         ? "screen.another_config_manager.config.neoforge_mod_list"
                         : "screen.another_config_manager.config.mods_browser"),
-                () -> minecraft.setScreen(acmIsDefaultMods
-                        ? new ModListScreen(this)
+                () -> minecraft.gui.setScreen(acmIsDefaultMods
+                        ? ModListScreen.create(this)
                         : new ConfigModBrowserScreen(this))
         ));
         layout.visitWidgets(this::addRenderableWidget);
@@ -83,7 +83,7 @@ public class ConfigOpenerScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(lastScreen);
+        minecraft.gui.setScreen(lastScreen);
     }
 
     private void openConfig(ModConfig config) {
@@ -95,7 +95,7 @@ public class ConfigOpenerScreen extends Screen {
         }
         boolean editable = ConfigAccessPolicy.canEdit(config.getType());
         ConfigEditSession session = new ConfigEditSession(spec);
-        minecraft.setScreen(new SpecScreen(this, this, modId, config, session, List.of(), editable));
+        minecraft.gui.setScreen(new SpecScreen(this, this, modId, config, session, List.of(), editable));
     }
 
     private final class TypeList extends ObjectSelectionList<TypeList.Entry> {
@@ -436,7 +436,7 @@ public class ConfigOpenerScreen extends Screen {
             if (sectionPath.isEmpty()) {
                 leaveSession(lastScreen);
             } else {
-                minecraft.setScreen(lastScreen);
+                minecraft.gui.setScreen(lastScreen);
             }
         }
 
@@ -446,10 +446,10 @@ public class ConfigOpenerScreen extends Screen {
 
         private void leaveSession(@Nullable Screen target) {
             if (!session.isDirty()) {
-                minecraft.setScreen(target);
+                minecraft.gui.setScreen(target);
                 return;
             }
-            minecraft.setScreen(new UnsavedChangesScreen(this, session, modId, () -> minecraft.setScreen(target)));
+            minecraft.gui.setScreen(new UnsavedChangesScreen(this, session, modId, () -> minecraft.gui.setScreen(target)));
         }
 
         private void toggleChannelSelectMode() {
@@ -476,7 +476,7 @@ public class ConfigOpenerScreen extends Screen {
                 channelPick.paths.clear();
                 channelPick.kind = null;
                 updateChannelSelectButton();
-                minecraft.setScreen(new ColorChannelAssignScreen(
+                minecraft.gui.setScreen(new ColorChannelAssignScreen(
                         this, session, modId, config.getType(), candidates, withAlpha));
                 return;
             }
@@ -518,7 +518,7 @@ public class ConfigOpenerScreen extends Screen {
                 if (channelPick.active) {
                     child.channelPick = channelPick;
                 }
-                minecraft.setScreen(child);
+                minecraft.gui.setScreen(child);
                 return;
             }
             if (!(node instanceof ConfigSpecNodes.ValueNode value) || !value.editable() || !editable) {
@@ -556,15 +556,15 @@ public class ConfigOpenerScreen extends Screen {
             if (value.kind() == ConfigSpecNodes.ValueKind.LIST) {
                 CsvRule rule = CsvRuleRegistry.resolve(modId, config.getType(), value.path(), value.value());
                 if (rule != null && ConfigSpecNodes.isStringList(value.value())) {
-                    minecraft.setScreen(new CsvTableScreen(this, session, value, rule));
+                    minecraft.gui.setScreen(new CsvTableScreen(this, session, value, rule));
                 } else {
-                    minecraft.setScreen(new ListEditScreen(this, session, value));
+                    minecraft.gui.setScreen(new ListEditScreen(this, session, value));
                 }
                 return;
             }
             ColorBindingLine.Parsed colorBinding = ColorRuleRegistry.resolveBinding(modId, config.getType(), value.path());
             if (colorBinding != null) {
-                minecraft.setScreen(new ColorEditScreen(
+                minecraft.gui.setScreen(new ColorEditScreen(
                         this,
                         session,
                         colorBinding,
@@ -572,7 +572,7 @@ public class ConfigOpenerScreen extends Screen {
                 ));
                 return;
             }
-            minecraft.setScreen(new ValueEditScreen(this, session, value));
+            minecraft.gui.setScreen(new ValueEditScreen(this, session, value));
         }
 
         @SuppressWarnings({"unchecked", "rawtypes"})
@@ -1153,7 +1153,7 @@ public class ConfigOpenerScreen extends Screen {
             }
             if (ok) {
                 parent.refreshAfterChildEdit();
-                minecraft.setScreen(parent);
+                minecraft.gui.setScreen(parent);
             }
         }
 
@@ -1190,7 +1190,7 @@ public class ConfigOpenerScreen extends Screen {
                     order,
                     prefix
             );
-            minecraft.setScreen(new ColorEditScreen(
+            minecraft.gui.setScreen(new ColorEditScreen(
                     parent,
                     session,
                     binding,
@@ -1200,7 +1200,7 @@ public class ConfigOpenerScreen extends Screen {
 
         @Override
         public void onClose() {
-            minecraft.setScreen(parent);
+            minecraft.gui.setScreen(parent);
         }
     }
 }

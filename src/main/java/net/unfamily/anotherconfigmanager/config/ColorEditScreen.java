@@ -195,10 +195,19 @@ public class ColorEditScreen extends Screen {
     private EditBox channelBox(String label, int initial) {
         EditBox box = new EditBox(font, 0, 0, 40, 20, Component.literal(label));
         box.setMaxLength(3);
-        box.setFilter(s -> s == null || s.isEmpty() || s.chars().allMatch(Character::isDigit));
         box.setValue(String.valueOf(initial));
         box.setHint(Component.literal(label));
-        box.setResponder(text -> onChannelTextChanged());
+        // EditBox.setFilter was removed in 26.2; sanitize digits in the responder instead.
+        box.setResponder(text -> {
+            String digits = text == null ? "" : text.replaceAll("\\D", "");
+            if (!digits.equals(text)) {
+                int cursor = box.getCursorPosition();
+                box.setValue(digits);
+                box.setCursorPosition(Math.min(cursor, digits.length()));
+                return;
+            }
+            onChannelTextChanged();
+        });
         return box;
     }
 
@@ -407,7 +416,7 @@ public class ColorEditScreen extends Screen {
 
         if (csvCellConsumer != null) {
             csvCellConsumer.accept(ColorCodec.encodeHex(argb, spec));
-            minecraft.setScreen(parent);
+            minecraft.gui.setScreen(parent);
             return;
         }
         if (session == null || configPaths.isEmpty()) {
@@ -431,11 +440,11 @@ public class ColorEditScreen extends Screen {
         if (parent instanceof ConfigOpenerScreen.SpecScreen specScreen) {
             specScreen.refreshAfterChildEdit();
         }
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 }

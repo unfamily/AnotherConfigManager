@@ -51,7 +51,7 @@ public class RestartRequiredScreen extends Screen {
             afterCommit.run();
             return;
         }
-        Minecraft.getInstance().setScreen(new RestartRequiredScreen(parent, modId, cats, () -> {
+        Minecraft.getInstance().gui.setScreen(new RestartRequiredScreen(parent, modId, cats, () -> {
             session.commit();
             afterCommit.run();
         }));
@@ -81,7 +81,7 @@ public class RestartRequiredScreen extends Screen {
         footer.addChild(AcmButton.text(
                 100,
                 Component.translatable("screen.another_config_manager.config.restart.cancel"),
-                () -> minecraft.setScreen(parent)));
+                () -> minecraft.gui.setScreen(parent)));
 
         layout.visitWidgets(this::addRenderableWidget);
         repositionElements();
@@ -94,7 +94,7 @@ public class RestartRequiredScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     private final class CategoryList extends ObjectSelectionList<CategoryList.Entry> {

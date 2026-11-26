@@ -462,7 +462,7 @@ public class CsvTableScreen extends Screen {
         }
         final int rowIdx = selectedRow;
         final int colIdx = selectedCol;
-        minecraft.setScreen(new ColorEditScreen(
+        minecraft.gui.setScreen(new ColorEditScreen(
                 this,
                 colorSpec,
                 argb,
@@ -638,7 +638,7 @@ public class CsvTableScreen extends Screen {
             return;
         }
         parent.refreshAfterChildEdit();
-        minecraft.setScreen(new ListEditScreen(parent, session, node, true));
+        minecraft.gui.setScreen(new ListEditScreen(parent, session, node, true));
     }
 
     private @Nullable List<String> encodeTableRows() {
@@ -688,7 +688,7 @@ public class CsvTableScreen extends Screen {
         }
         if (ConfigSpecNodes.trySetListBuffered(session, node.value(), joined)) {
             parent.refreshAfterChildEdit();
-            minecraft.setScreen(parent);
+            minecraft.gui.setScreen(parent);
         } else {
             setStatusMessage(Component.translatable("screen.another_config_manager.config.invalid"));
         }
@@ -759,7 +759,7 @@ public class CsvTableScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     private record ColumnHeader(int index, String label) {}

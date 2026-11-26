@@ -43,7 +43,7 @@ public class UnsavedChangesScreen extends Screen {
             onSavedOrDiscarded.run();
         }));
         footer.addChild(AcmButton.text(100, Component.translatable("screen.another_config_manager.config.unsaved.cancel"), () ->
-                minecraft.setScreen(parent)));
+                minecraft.gui.setScreen(parent)));
 
         layout.visitWidgets(this::addRenderableWidget);
         repositionElements();
@@ -56,6 +56,6 @@ public class UnsavedChangesScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 }

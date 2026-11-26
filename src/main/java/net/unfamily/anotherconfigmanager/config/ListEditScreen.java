@@ -87,7 +87,7 @@ public class ListEditScreen extends Screen {
         CsvRule existing = CsvRuleRegistry.resolve(parent.modId(), parent.configType(), node.path(), node.value());
         if (stringList && existing != null && !preferRawList) {
             // Defer navigation: setScreen during init is unsafe.
-            minecraft.execute(() -> minecraft.setScreen(new CsvTableScreen(parent, session, node, existing)));
+            minecraft.execute(() -> minecraft.gui.setScreen(new CsvTableScreen(parent, session, node, existing)));
             return;
         }
         showCsvView = stringList && existing != null;
@@ -174,7 +174,7 @@ public class ListEditScreen extends Screen {
         }
         CsvRule rule = CsvRuleRegistry.generateMinimalRule(parent.modId(), parent.configType(), node.path(), text);
         parent.refreshAfterChildEdit();
-        minecraft.setScreen(new CsvTableScreen(parent, session, node, rule));
+        minecraft.gui.setScreen(new CsvTableScreen(parent, session, node, rule));
     }
 
     private void openCsvView() {
@@ -188,7 +188,7 @@ public class ListEditScreen extends Screen {
             return;
         }
         parent.refreshAfterChildEdit();
-        minecraft.setScreen(new CsvTableScreen(parent, session, node, rule));
+        minecraft.gui.setScreen(new CsvTableScreen(parent, session, node, rule));
     }
 
     private void rebuildRows() {
@@ -268,7 +268,7 @@ public class ListEditScreen extends Screen {
     private void apply() {
         if (ConfigSpecNodes.trySetListBuffered(session, node.value(), rows)) {
             parent.refreshAfterChildEdit();
-            minecraft.setScreen(parent);
+            minecraft.gui.setScreen(parent);
         } else {
             setStatusMessage(Component.translatable("screen.another_config_manager.config.invalid"));
         }
@@ -366,7 +366,7 @@ public class ListEditScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     private record IndexedRow(int sourceIndex, Object value) {}

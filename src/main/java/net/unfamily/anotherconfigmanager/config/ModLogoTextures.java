@@ -15,7 +15,6 @@ import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.resource.ResourcePackLoader;
 import net.neoforged.neoforgespi.language.IModInfo;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Loads and caches mod logo textures (same source as NeoForge Mod List).
+ * Prefers {@code iconFile}, then {@code bannerFile}, then deprecated {@code logoFile}.
  */
 public final class ModLogoTextures {
     private static final Map<String, Optional<Logo>> CACHE = new ConcurrentHashMap<>();
@@ -48,7 +48,7 @@ public final class ModLogoTextures {
             return Optional.empty();
         }
         IModInfo info = container.get().getModInfo();
-        Optional<String> logoFile = info.getLogoFile();
+        Optional<String> logoFile = resolveLogoPath(info);
         if (logoFile.isEmpty()) {
             return Optional.empty();
         }
@@ -79,5 +79,25 @@ public final class ModLogoTextures {
         } catch (Exception error) {
             return Optional.empty();
         }
+    }
+
+    /** Matches NeoForge 26.2 Mod List: iconFile, then bannerFile, then legacy logoFile. */
+    private static Optional<String> resolveLogoPath(IModInfo info) {
+        Optional<String> fromMod = configString(info.getConfig(), "iconFile")
+                .or(() -> configString(info.getConfig(), "bannerFile"))
+                .or(() -> configString(info.getConfig(), "logoFile"));
+        if (fromMod.isPresent()) {
+            return fromMod;
+        }
+        var owning = info.getOwningFile().getConfig();
+        return configString(owning, "iconFile")
+                .or(() -> configString(owning, "bannerFile"))
+                .or(() -> configString(owning, "logoFile"))
+                .or(info::getLogoFile);
+    }
+
+    private static Optional<String> configString(net.neoforged.neoforgespi.language.IConfigurable config, String key) {
+        Object value = config.getConfigElement(key).orElse(null);
+        return value instanceof String s && !s.isBlank() ? Optional.of(s) : Optional.empty();
     }
 }

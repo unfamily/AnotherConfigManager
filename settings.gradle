@@ -1,5 +1,6 @@
 pluginManagement {
     repositories {
+        mavenCentral()
         gradlePluginPortal()
         maven { url = 'https://maven.neoforged.net/releases' }
     }
@@ -8,3 +9,5 @@ pluginManagement {
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
+
+rootProject.name = 'AnotherConfigManager-26.2'
